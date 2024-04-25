@@ -8,6 +8,7 @@ namespace NeuralNetworks
             public double output;
             public double biases;
             public double biasesGradient;
+
         }
     }
 }

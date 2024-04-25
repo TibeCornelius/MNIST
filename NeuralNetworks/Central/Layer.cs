@@ -7,7 +7,10 @@ namespace NeuralNetworks
     {//First Itteration NeuralNetwork
         public class Layer
         {
-            private CentralNeuralNetwork.Neuron[] NeuronArray;
+
+
+
+            //StNeuron[] StNeuronArray;
             public int AmmountofNeurons { get; private set; }
             public double[,]? Wheights { get; set;}
             public List<double> ListNeuronOutputs { get; set ; }
@@ -15,18 +18,32 @@ namespace NeuralNetworks
             public Layer? nextLayer { get; set; }
             public Layer( int AmmountofNeurons, Layer previousLayer )
             {//gets initialized every layer except for the first
-                this.NeuronArray = initialize_NeuronArray( AmmountofNeurons );
                 this.AmmountofNeurons = AmmountofNeurons;
                 this.previousLayer = previousLayer;
+                //this.StNeuronArray = StNeuronArrayCreation();
+
                 this.Wheights = initialize_RandomWeights();
                 this.ListNeuronOutputs = new List<double>();
             }
             public Layer( int AmmountofNeurons )
             {//gets initialized at the fist layer no weights
-                this.NeuronArray = initialize_NeuronArray( AmmountofNeurons );
                 this.AmmountofNeurons = AmmountofNeurons;
                 this.ListNeuronOutputs = new List<double>();
             }
+
+            //private StNeuron[] StNeuronArrayCreation()
+            //{
+            //    StNeuron[] NeuronArray = new StNeuron[ AmmountofNeurons ];
+            //    Random random = new Random();
+            //    for ( int Neuron = 0 ; Neuron < NeuronArray.Length ; Neuron++ )
+            //    {
+            //        StNeuron neuron = new StNeuron();
+//
+            //        neuron.biases = random.NextDouble() * 2 - 1;
+            //    }
+//
+            //    return NeuronArray;
+            //}
 
             public List<double>? CalculateOutputs( List<double> inputs )
             {
@@ -53,15 +70,6 @@ namespace NeuralNetworks
                 return output;
             }
 
-            private Neuron[] initialize_NeuronArray( int AmmountofNeurons )
-            {
-                Neuron[] neuronarray = new Neuron[ AmmountofNeurons ];
-                for( int index = 0; index < neuronarray.Length; index++ )
-                {
-                    neuronarray[ index ] = new Neuron( this );
-                }
-                return neuronarray;
-            }
             private double[,] initialize_RandomWeights()
             {
 
