@@ -9,8 +9,6 @@ namespace NeuralNetworks
             public double[,] WeightsPreviousLayer;
             public double[,] WeightsGradient;
 
-            //Partial Derrivative outputs in respect to the cost using the chain rule of ever neuron
-            public double[]? PartialOutputs;
             public StNeuron[] StNeurons;
             private Network ParentNetwork;
             int NeuronAmmount;
@@ -212,124 +210,6 @@ namespace NeuralNetworks
                     StNeurons[ nodeOut ].biasesGradient = derrivativeCostBiases;
                 }
             }
-
-            public void OutputGradientWeights()
-            {
-                WeightsGradient = new double[ ParentNetwork.NetworkLayers[ LayerLevel - 1 ].NeuronAmmount, NeuronAmmount];
-                for( int NeuronOut = 0 ; NeuronOut < NeuronAmmount ; NeuronOut++ )
-                {
-                    for( int NeuronIn = 0 ; NeuronIn < ParentNetwork.NetworkLayers[ LayerLevel - 1 ].NeuronAmmount ; NeuronIn++ )
-                    {
-                        WeightsGradient[ NeuronIn, NeuronOut ] = CalculateGradientWheight( NeuronIn, NeuronOut );
-                    }
-                }
-            }
-
-            private double CalculateGradientWheight( int NeuronIn, int NeuronOut )
-            {
-                return
-                ParentNetwork.NetworkLayers[ LayerLevel - 1 ].StNeurons[ NeuronIn ].output * 
-                SigmoidDerrivative ( StNeurons[ NeuronOut ].input );
-                //ParentNetwork.CostDerrivative();
-            }
-
-            private double HiddenLayerCalculateGradientWheight( int NeuronIn, int NeuronOut )
-            {
-                if( ParentNetwork.NetworkLayers[ LayerLevel + 1 ].PartialOutputs == null )
-                {
-                    throw new Exception( "PartialOutputs == null ");
-                }
-                return
-                ParentNetwork.NetworkLayers[ LayerLevel + 1 ].PartialOutputs[ NeuronOut ] * 
-                SigmoidDerrivative ( StNeurons[ NeuronOut ].input );
-                //ParentNetwork.CostDerrivative();
-            }
-            public void HiddenLayerGradientWeights()
-            {
-                int PrevLayerNeurons;
-                try 
-                { 
-                    PrevLayerNeurons = ParentNetwork.NetworkLayers[ LayerLevel - 1 ].NeuronAmmount;
-                    WeightsGradient = new double[ PrevLayerNeurons, NeuronAmmount];
-                }
-                catch
-                {
-                    PrevLayerNeurons = 784;
-                    WeightsGradient = new double[ 784, NeuronAmmount];
-                }
-                for( int NeuronOut = 0 ; NeuronOut < NeuronAmmount ; NeuronOut++ )
-                {
-                    for( int NeuronIn = 0 ; NeuronIn < PrevLayerNeurons ; NeuronIn++ )
-                    {
-                        WeightsGradient[ NeuronIn, NeuronOut ] = HiddenLayerCalculateGradientWheight( NeuronIn, NeuronOut );
-                    }
-                }
-            }
-
-            public void HiddenLayerGradientBiases()
-            {
-                for( int Neuron = 0 ; Neuron < StNeurons.Length ; Neuron++ )
-                {
-                    StNeurons[ Neuron ].biasesGradient = HiddenLayerCalculateGradientBiases( Neuron );
-                }
-            }
-            
-            private double HiddenLayerCalculateGradientBiases( int Neuron )
-            {
-                return 
-                SigmoidDerrivative ( StNeurons[ Neuron ].input ) * 
-                ParentNetwork.NetworkLayers[ LayerLevel + 1 ].PartialOutputs[ Neuron ];
-            }
-            public void OutputGradientBiases()
-            {
-                for( int Neuron = 0 ; Neuron < StNeurons.Length ; Neuron++ )
-                {
-                    StNeurons[ Neuron ].biasesGradient = CalculateGradientBiases( Neuron );
-                }
-            }
-            private double CalculateGradientBiases( int NeuronOut )
-            {
-                return 
-                SigmoidDerrivative ( StNeurons[ NeuronOut ].input ); 
-                //ParentNetwork.CostDerrivative();
-            }
-
-            public void HiddenLayerCalculatePartialOutputs()
-            {
-                int prevLayerNeurons = ParentNetwork.NetworkLayers[ LayerLevel - 1 ].NeuronAmmount;
-                PartialOutputs = new double[ prevLayerNeurons ];
-                for( int PrevLayerNeuron = 0 ; PrevLayerNeuron < prevLayerNeurons ; PrevLayerNeuron++ )
-                {
-                    double PartialOutput = new double();
-                    for ( int index = 0 ; index < NeuronAmmount ; index++ )
-                    {
-                        PartialOutput += WeightsPreviousLayer[ PrevLayerNeuron, index ] * SigmoidDerrivative( StNeurons[ index ].input ) * ParentNetwork.NetworkLayers[ LayerLevel + 1 ].PartialOutputs[ index ];
-                    }
-                    PartialOutputs[ PrevLayerNeuron ] = PartialOutput;
-                }
-            }
-            public void CalculatePartialOutputs()
-            {
-                int PrevLayerNeurons;
-                try 
-                { 
-                    PrevLayerNeurons = ParentNetwork.NetworkLayers[ LayerLevel - 1 ].NeuronAmmount;
-                }
-                catch
-                {
-                    PrevLayerNeurons = 784;
-                }
-                PartialOutputs = new double[ PrevLayerNeurons ];
-                for( int PrevLayerNeuron = 0 ; PrevLayerNeuron < PrevLayerNeurons ; PrevLayerNeuron++ )
-                {
-                    double PartialOutput = new double();
-                    for ( int index = 0 ; index < NeuronAmmount ; index++ )
-                    {
-                        //PartialOutput += WeightsPreviousLayer[ PrevLayerNeuron, index ] * SigmoidDerrivative( StNeurons[ index ].input ) * ParentNetwork.CostDerrivative();
-                    }
-                    PartialOutputs[ PrevLayerNeuron ] = PartialOutput;
-                }
-            }
             #endregion
             #region Update Weights, biases
             
@@ -365,24 +245,7 @@ namespace NeuralNetworks
                     StNeurons[ nodeOut ].biasesGradient = 0;
                 }
             }
-            public void UpdateWeights( float LearningRate )
-            {
-                for( int prevNeuron = 0 ; prevNeuron < WeightsPreviousLayer.GetLength(0) ; prevNeuron++ )
-                {
-                    for( int myNeuron = 0 ; myNeuron < WeightsPreviousLayer.GetLength(1) ; myNeuron++ )
-                    {
-                        WeightsPreviousLayer[ prevNeuron, myNeuron ] -= WeightsGradient[ prevNeuron, myNeuron ] * LearningRate ;
-                    }
-                }
-            }
 
-            public void UpdateBiases( float LearningRate )
-            {
-                for( int myNeuron = 0 ; myNeuron < WeightsPreviousLayer.GetLength(1) ; myNeuron++ )
-                {
-                    StNeurons[ myNeuron ].biases -= StNeurons[ myNeuron ].biasesGradient * LearningRate;
-                }
-            }
             #endregion
         }
     }

@@ -77,8 +77,6 @@ namespace NeuralNetworks
                 double LearningRate = 0.001;
                 ApplyAllGradients( LearningRate );
                 ResetAllGradients();
-                //CalculateGradients();
-                //UpdateWheigthsAndBiases();
                 Console.WriteLine("TotalCorrectGuesses = " + CorrectGuesses);
                 Console.WriteLine( TotalAverageCost );
                 Console.WriteLine("TrainSession 1 ");
@@ -99,15 +97,6 @@ namespace NeuralNetworks
                 }
             }
 
-            private void UpdateWheigthsAndBiases()
-            {
-                float LearningRate = 0.001f;
-                foreach( Layer layer in NetworkLayers )
-                {
-                    layer.UpdateBiases( LearningRate );
-                    layer.UpdateWeights( LearningRate );
-                }
-            }
             private void Gradients( ImportedImage StImportedImage )
             {   
                 Layer outputLayer = NetworkLayers[ NetworkLayers.Count - 1 ];
@@ -128,27 +117,6 @@ namespace NeuralNetworks
                     }
                 }
             }
-
-            private void CalculateGradients()
-            {
-                //Calculate  gradients of the ouptut layer 
-                NetworkLayers[ NetworkLayers.Count - 1 ].OutputGradientWeights();
-                NetworkLayers[ NetworkLayers.Count - 1 ].OutputGradientBiases();
-                NetworkLayers[ NetworkLayers.Count - 1 ].CalculatePartialOutputs();
-
-                for ( int layerIndex = NetworkLayers.Count - 2 ; layerIndex >= 0 ; layerIndex-- )
-                {
-                    CalculateHiddenLayers( NetworkLayers[ layerIndex ] );
-                }
-            }
-
-            private void CalculateHiddenLayers( Layer layer )
-            {
-                layer.HiddenLayerGradientWeights();
-                layer.HiddenLayerGradientBiases();
-                layer.CalculatePartialOutputs();
-            }
-
             private int GetHighestOutput( ImportedImage StImportedImage )
             {
                 double output = new double();

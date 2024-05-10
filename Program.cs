@@ -74,7 +74,7 @@ class Program
     static void Main(string[] args)
     {
         List<int> AmmountOfNeurons = [ 400, 150, 10 ];
-        //List<int> AmmountOfNeurons = [ 5, 10 ];
+        //List<int> AmmountOfNeurons = [ 400, 200, 100, 10 ];
         Program Main = new Program( AmmountOfNeurons );
         Main.ImportSetOfImages();
 
