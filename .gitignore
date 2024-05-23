@@ -22,3 +22,5 @@ obj/project.assets.json
 obj/
 DataSetMNIST/train-images.idx3-ubyte
 DataSetMNIST/train-labels.idx1-ubyte
+AiNumbers\SavedSettings
+SavedSettings/

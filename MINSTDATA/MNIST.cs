@@ -9,48 +9,64 @@ namespace MNISTDATA
         private const string TrainLabels = @"C:\Users\corne\Desktop\Everything\C#\HelloWorld\Ai\AiNumbers\DataSetMNIST\train-labels.idx1-ubyte";
         private const string TestImages = @"C:\Users\corne\Desktop\Everything\C#\HelloWorld\Ai\AiNumbers\DataSetMNIST\train-images.idx3-ubyte";
         private const string TestLabels = @"C:\Users\corne\Desktop\Everything\C#\HelloWorld\Ai\AiNumbers\DataSetMNIST\t10k-labels.idx1-ubyte";
-
+        enum Mode
+        {
+            Training,
+            Testing
+        }
         public static IEnumerable< Image > ReadTrainingData()
         {
-            foreach (var item in Read( TrainImages, TrainLabels ))
+            Mode mode = Mode.Training;
+            foreach (var item in Read( TrainImages, TrainLabels, mode  ))
             {
                 yield return item;
             }
+
         }
 
         public static IEnumerable< Image > ReadTestData()
         {
-            foreach (var item in Read(TestImages, TestLabels))
+            Mode mode = Mode.Testing;
+            foreach (var item in Read(TestImages, TestLabels, mode ))
             {
                 yield return item;
             }
+
         }
 
-        private static IEnumerable< Image > Read(string imagesPath, string labelsPath)
+        private static IEnumerable< Image > Read(string imagesPath, string labelsPath, Mode mode)
         {
-            BinaryReader labels = new BinaryReader(new FileStream(labelsPath, FileMode.Open));
-            BinaryReader images = new BinaryReader(new FileStream(imagesPath, FileMode.Open));
-
-            int magicNumber = images.ReadBigInt32();
-            int numberOfImages = images.ReadBigInt32();
-            int width = images.ReadBigInt32();
-            int height = images.ReadBigInt32();
-
-            int magicLabel = labels.ReadBigInt32();
-            int numberOfLabels = labels.ReadBigInt32();
-
-            for (int i = 0; i < numberOfImages; i++)
+            using ( BinaryReader labels = new BinaryReader(new FileStream(labelsPath, FileMode.Open)))
             {
-                var bytes = images.ReadBytes(width * height);
-                var arr = new byte[height, width];
-
-                arr.ForEach((j,k) => arr[j, k] = bytes[j * height + k]);
-
-                yield return new Image()
+                using (BinaryReader images = new BinaryReader(new FileStream(imagesPath, FileMode.Open)))
                 {
-                    Data = arr,
-                    Label = labels.ReadByte()
-                };
+                    int ImageCount = 10000;
+                    if( mode == Mode.Training )
+                    {
+                        ImageCount = 60000;
+                    }
+                    int magicNumber = images.ReadBigInt32();
+                    int numberOfImages = images.ReadBigInt32();
+                    int width = images.ReadBigInt32();
+                    int height = images.ReadBigInt32();
+
+                    int magicLabel = labels.ReadBigInt32();
+                    int numberOfLabels = labels.ReadBigInt32();
+
+                    for (int i = 0 ; i < ImageCount ; i++)
+                    {
+                        var bytes = images.ReadBytes(width * height);
+                        var arr = new byte[height, width];
+
+                        arr.ForEach((j,k) => arr[j, k] = bytes[j * height + k]);
+
+                        yield return new Image()
+                        {
+                            Data = arr,
+                            Label = labels.ReadByte()
+                        };
+                    }
+                }
             }
         }
         public static float[,] ConvertByteTofloatArray( byte[,] image )

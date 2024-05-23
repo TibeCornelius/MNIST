@@ -1,31 +1,74 @@
+using System.Text.Json;
+
 namespace NeuralNetworks
 {
     namespace Latest
     {
         public class Network
         {
-            
             public List<Layer> NetworkLayers;
             public List<int> LiNetwork;
-            public Network( List<int> Network )
+            public Network( List<int> Network, bool New_Network = true, string _JsonFile  = "")
             {
                 this.LiNetwork = Network;
                 
                 this.NetworkLayers = new List<Layer>();
-                int index = 0 ; 
-                foreach( int layer in Network )
+                if( New_Network )
                 {
-                    NetworkLayers.Add( initialize_Layers( Network, index ) );
-                    index++;
+                    int index = 0 ; 
+                    foreach( int layer in Network )
+                    {
+                        NetworkLayers.Add( initialize_Layers( Network, index ) );
+                        index++;
+                    }
+                }
+                else
+                {
+                   initializeFromJson( Network, _JsonFile ); 
                 }
             }
 
+#region Json
+            public void CreateJson( string OuputLocation )
+            {
+                Directory.CreateDirectory(".\\SavedSettings\\" + OuputLocation );
+                foreach( Layer layer in NetworkLayers )
+                {
+                    layer.CreateJson( OuputLocation );
+                }
+                CreateLayerCountJson( OuputLocation );
+            }
+
+            private void CreateLayerCountJson( string OuputLocation )
+            {
+                string LayerCountJsonString = JsonSerializer.Serialize( NetworkLayers.Count );
+                File.WriteAllText( ".\\SavedSettings\\" + OuputLocation + "\\LayerCount.json", LayerCountJsonString );
+            }
+
+#endregion
+#region initialization
             private Layer initialize_Layers( List<int> Network, int index )
             {
                 Layer layer = new Layer( this, Network[ index ], index );
                 return layer;
             }
 
+            private void initializeFromJson( List<int> Network, string JsonFile )
+            {
+                int index = 0;
+                foreach( int layer in Network )
+                {
+                    NetworkLayers.Add( initialize_LayersFromJson( layer, index, JsonFile ) );
+                    index++;
+                }
+            }
+            private Layer initialize_LayersFromJson( int layerNeuronCount, int index, string JsonFile )
+            {
+                bool NetworkFromJson = true;   
+                Layer mylayer = new Layer( this, layerNeuronCount, index, NetworkFromJson, JsonFile );
+                return mylayer;
+            }
+#endregion
             public double[] ByteInput( byte[,] image )
             {
                 double[] output = new double[ 28 * 28 ];
@@ -43,7 +86,7 @@ namespace NeuralNetworks
                 double returnvalue = WeightedInput / 255;
                 return returnvalue;
             }
-            public void Train( List<byte[,]> images, List<string> labels )
+            public void Train( List<byte[,]> images, List<string> labels, int TrainingSession )
             {
                 List<ImportedImage> LiStImportedImages = new List<ImportedImage>();
                 int CorrectGuesses = 0;
@@ -79,9 +122,40 @@ namespace NeuralNetworks
                 ResetAllGradients();
                 Console.WriteLine("TotalCorrectGuesses = " + CorrectGuesses);
                 Console.WriteLine( TotalAverageCost );
-                Console.WriteLine("TrainSession 1 ");
+                Console.WriteLine($"TrainSession {TrainingSession} ");
             }
-            
+            public void Test( List<byte[,]> images, List<string> labels, int TrainingSession )
+            {
+                List<ImportedImage> LiStImportedImages = new List<ImportedImage>();
+                int CorrectGuesses = 0;
+                for( int imageIndex = 0 ; imageIndex < images.Count ; imageIndex++ )
+                {
+                    ImportedImage StImportedImage = new ImportedImage
+                    {
+                        image = images[imageIndex],
+                        input = images[imageIndex],
+                        output = ByteInput(images[imageIndex]),
+                        excpectedOutput = CalculateCorrectOutputs(labels[imageIndex]),
+                        label = labels[imageIndex]
+                    };
+                    foreach ( Layer layer in NetworkLayers )
+                    {
+                        layer.CalculateInputsEveryNeuron( StImportedImage );
+                        layer.CalculateOutputs();
+                    }
+                    StImportedImage.cost = Cost( StImportedImage );
+                    if( GetHighestOutput( StImportedImage ) == Convert.ToInt16(StImportedImage.label) )
+                    {
+                        CorrectGuesses++;
+                    }
+                    LiStImportedImages.Add( StImportedImage );
+                }
+                double TotalAverageCost = TotalCost( LiStImportedImages );
+                Console.WriteLine("TotalCorrectGuesses = " + CorrectGuesses);
+                Console.WriteLine( TotalAverageCost );
+                Console.WriteLine($"TrainSession {TrainingSession} ");
+            }
+                
             private void ResetAllGradients()
             {
                 foreach( Layer layer in NetworkLayers )
