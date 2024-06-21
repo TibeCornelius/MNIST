@@ -1,14 +1,12 @@
-namespace NeuralNetworks
+namespace Ai.MNIST.NeuralNetworks
 {
-    namespace Latest
+    public struct StNeuron
     {
-        public struct StNeuron
-        {
-            public double input;
-            public double output;
-            public double biases;
-            public double biasesGradient;
+        public double input;
+        public double output;
+        public double biases;
+        public double biasesGradient;
 
-        }
     }
+
 }

@@ -1,16 +1,14 @@
-namespace NeuralNetworks
+namespace Ai.MNIST.NeuralNetworks
 {
-    namespace Latest
+    public struct ImportedImage
     {
-        public struct ImportedImage
-        {
-            public double[] nodeValuesFinalLayer;
-            public byte[,] image;
-            public string label;
-            public byte[,] input;
-            public double[] output;
-            public double cost;
-            public double[] excpectedOutput;
-        }
+        public double[] nodeValuesFinalLayer;
+        public byte[,] image;
+        public string label;
+        public byte[,] input;
+        public double[] output;
+        public double cost;
+        public double[] excpectedOutput;
     }
+
 }

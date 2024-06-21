@@ -1,7 +1,7 @@
 using System.Drawing;
 using System.Drawing.Imaging;
 
-namespace MNISTDATA
+namespace Ai.MNIST.Data
 {
     public static class MNIST
     {
