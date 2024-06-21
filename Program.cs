@@ -104,7 +104,7 @@ class Program
             Neurons.Add( 400 );
             Neurons.Add( 150 );            
         }
-        Neurons.add( 10 );
+        Neurons.Add( 10 );
         network = new Network( Neurons );
     }
 
