@@ -5,10 +5,14 @@ namespace Ai.MNIST.Data
 {
     public static class MNIST
     {
-        private const string TrainImages = @"C:\Users\corne\Desktop\Everything\C#\HelloWorld\Ai\AiNumbers\DataSetMNIST\train-images.idx3-ubyte";
+        /*private const string TrainImages = @"C:\Users\corne\Desktop\Everything\C#\HelloWorld\Ai\AiNumbers\DataSetMNIST\train-images.idx3-ubyte";
         private const string TrainLabels = @"C:\Users\corne\Desktop\Everything\C#\HelloWorld\Ai\AiNumbers\DataSetMNIST\train-labels.idx1-ubyte";
         private const string TestImages = @"C:\Users\corne\Desktop\Everything\C#\HelloWorld\Ai\AiNumbers\DataSetMNIST\train-images.idx3-ubyte";
-        private const string TestLabels = @"C:\Users\corne\Desktop\Everything\C#\HelloWorld\Ai\AiNumbers\DataSetMNIST\t10k-labels.idx1-ubyte";
+        private const string TestLabels = @"C:\Users\corne\Desktop\Everything\C#\HelloWorld\Ai\AiNumbers\DataSetMNIST\t10k-labels.idx1-ubyte";*/
+        private const string TrainImages = @"C:\Users\corne\Desktop\Everything\C#\Ai\AiMaui\Ai\MNIST\DataBase\train-images-idx3-ubyte\train-images-idx3-ubyte";
+        private const string TrainLabels = @"C:\Users\corne\Desktop\Everything\C#\Ai\AiMaui\Ai\MNIST\DataBase\train-labels-idx1-ubyte\train-labels-idx1-ubyte";
+        private const string TestImages = @"C:\Users\corne\Desktop\Everything\C#\Ai\AiMaui\Ai\MNIST\DataBase\t10k-images-idx3-ubyte\t10k-images-idx3-ubyte";
+        private const string TestLabels = @"C:\Users\corne\Desktop\Everything\C#\Ai\AiMaui\Ai\MNIST\DataBase\t10k-labels-idx1-ubyte\t10k-labels-idx1-ubyte";
         enum Mode
         {
             Training,
@@ -74,7 +78,7 @@ namespace Ai.MNIST.Data
 
            return new float[0,0]; 
         }
-        public static void ConvertToPng( byte[,] image )
+        /*public static void ConvertToPng( byte[,] image )
         {
             string PngOutput = @"C:\Users\corne\Desktop\Everything\C#\HelloWorld\Ai\AiNumbers\DataBase\PngFiles";
             int index = 0 ;
@@ -104,7 +108,7 @@ namespace Ai.MNIST.Data
                 bitmap.Save(outputPath, ImageFormat.Png);
             }
 #pragma warning restore CA1416 // Validate platform compatibility
-        }
+        }*/
     }
     public class Image
     {

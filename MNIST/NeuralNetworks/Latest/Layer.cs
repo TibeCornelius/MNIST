@@ -1,7 +1,6 @@
-using Tensorflow.Operations.Activation;
 using System.Text.Json;
 
-namespace NeuralNetworks
+namespace Ai.MNIST.NeuralNetworks
 {
 
     public class Layer

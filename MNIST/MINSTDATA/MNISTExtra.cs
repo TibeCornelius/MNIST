@@ -104,7 +104,7 @@ namespace Ai.MNIST.Data
             return asciiChars[index];
         }
 
-        public void ConvertToPng( int index, string mqlskdjf )
+        /*public void ConvertToPng( int index, string mqlskdjf )
         {
             // Create a directory if it doesn't exist
             Directory.CreateDirectory( PngOutput );
@@ -130,8 +130,8 @@ namespace Ai.MNIST.Data
                 // Save the bitmap as a PNG image
                 bitmap.Save(outputPath, ImageFormat.Png);
             }
-        }
-        public void ConvertToPng( byte[,] image )
+        }*/
+        /*public void ConvertToPng( byte[,] image )
         {
             int index = 0 ;
             // Create a directory if it doesn't exist
@@ -158,6 +158,6 @@ namespace Ai.MNIST.Data
                 // Save the bitmap as a PNG image
                 bitmap.Save(outputPath, ImageFormat.Png);
             }
-        }
+        }*/
     }
 }
