@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Text.Json;
+using Ai.MNIST.NeuralNetworks.TrainingResults;
 
 
 namespace Ai.MNIST.NeuralNetworks
@@ -11,6 +12,7 @@ namespace Ai.MNIST.NeuralNetworks
     {
         public int LayerCount;
         public int[] NeuronCount;
+        
         public NetworkValues()
         {
             this.LayerCount = 0;
@@ -51,6 +53,7 @@ namespace Ai.MNIST.NeuralNetworks
         private List< byte[,] > bTestingList;
         private List< string > sTestingList;
         MNIST.Data.Image DataSet;
+        public delegate void DisplayResults( ImageData image );
         public Manager()
         {
             this.DataSet = new MNIST.Data.Image();
@@ -113,27 +116,26 @@ namespace Ai.MNIST.NeuralNetworks
                     }
                     else
                     {
-                        string JsonLayerCount = "";
+                        string JsonString = string.Empty;
                         try
                         {
-                            JsonLayerCount = File.ReadAllText( Util.StandardJsonOutput + "" + relativeOuptut + "\\LayerCount.json");
+                            JsonString = File.ReadAllText( OutPuts.StandardJsonOutput + "" + relativeOuptut + "\\LayerCount.json");
                         }
                         catch( FileNotFoundException )
                         {
                             Console.WriteLine("FileNotFound");
-                            continue;
+                            goto LoopEnd;
                         }
-                        List<int> Neurons = new List<int>();
-                        int Layercount = JsonSerializer.Deserialize<int>( JsonLayerCount );
-                        for( int layer = 0 ; layer < Layercount ; layer++ )
+                        try
                         {
-                            string JsonNeuronCount = File.ReadAllText( Util.StandardJsonOutput + "" + relativeOuptut + "\\Layer" + (layer + 1) +"NeuronCount.json"); 
-                            int NeuronCount =  JsonSerializer.Deserialize<int>( JsonNeuronCount );
-                            Neurons.Add( NeuronCount );
+                            NetworkJsonFormat JsonSettings = JsonSerializer.Deserialize<NetworkJsonFormat>( JsonString );
+                            network = new Network( JsonSettings ); 
                         }
-                        bool isThisANewNetwork = false;
-                        network = new Network( Neurons, isThisANewNetwork, relativeOuptut ); 
-                        OutputNotRecieved = false;
+                        catch( Exception )
+                        {
+                            goto LoopEnd;
+                        }
+                        LoopEnd:;
                     }
                 }
             }
@@ -144,28 +146,22 @@ namespace Ai.MNIST.NeuralNetworks
         }
 
 
-        public void SerializeWheightAndBiasesToJson()
+        public void SerializeWheightAndBiasesToJson( string output )
         {
             if( network == null )
             {
-                Console.WriteLine("Neuralnetworkdoes not yet exist create or import one first");
                 return;            
             }
-            Console.WriteLine("Give the outputlocation");
-            string? FileName = Console.ReadLine();
-            if( FileName != null )
-            {
-                network.CreateJson( FileName );
-                //File.WriteAllText( "SavedWheights/" + FileName + ".json", JsonString );
-            }
+
+            network.CreateJson( output );   
         }
 
 
-        public List<TrainingDataOutput> ImportSetOfTestingImages( ImportImages trainingImages )
+        public List<TrainingBatch> ImportSetOfTestingImages( ImportImages trainingImages )
         {
             if( network == null )
             {
-                return new List<TrainingDataOutput>();
+                return new List<TrainingBatch>();
             }
             foreach( MNIST.Data.Image image in MNIST.Data.MNIST.ReadTestData() )
             {
@@ -173,7 +169,7 @@ namespace Ai.MNIST.NeuralNetworks
                 sTestingList.Add( Convert.ToString( image.Label ) );
             }
             
-            List<TrainingDataOutput> trainingResults = new List<TrainingDataOutput>();
+            List<TrainingBatch> trainingResults = new List<TrainingBatch>();
             Random random = new Random();
             int AmmountImages;
             AmmountImages = trainingImages.Ammount;
@@ -197,12 +193,12 @@ namespace Ai.MNIST.NeuralNetworks
             return trainingResults;
         }
 
-        public List<TrainingDataOutput> ImportSetOfTrainingImages( ImportImages trainingImages )
+        public List<TrainingBatch> ImportSetOfTrainingImages( ImportImages trainingImages ,bool DisplayResults = false)
         {
             if( network == null )
             {
                 Console.WriteLine("Neuralnetworkdoes not yet exist create or import one first");
-                return new List<TrainingDataOutput>();
+                return new List<TrainingBatch>();
             }
             foreach( MNIST.Data.Image image in MNIST.Data.MNIST.ReadTestData() )
             {
@@ -210,7 +206,7 @@ namespace Ai.MNIST.NeuralNetworks
                 sTrainingList.Add( Convert.ToString( image.Label ) );
             }
 
-            List<TrainingDataOutput> trainingResults = new List<TrainingDataOutput>();
+            List<TrainingBatch> trainingResults = new List<TrainingBatch>();
             Random random = new Random();
             int AmmountImages;
             AmmountImages = trainingImages.Ammount;
@@ -226,7 +222,14 @@ namespace Ai.MNIST.NeuralNetworks
                     listToTrain.Add( bTrainingList[ randomnumber ] );
                     sListToTrain.Add( sTrainingList[ randomnumber ] );
                 }
-                trainingResults.Add( network.Train( listToTrain, sListToTrain, Itteration + 1 ) );
+                if( DisplayResults )
+                {
+                    trainingResults.Add( network.Train( listToTrain, sListToTrain, Itteration + 1, true ));
+                }
+                else
+                {
+                    trainingResults.Add( network.Train( listToTrain, sListToTrain, Itteration + 1 ) );
+                }
                 
             }
             bTrainingList.Clear();

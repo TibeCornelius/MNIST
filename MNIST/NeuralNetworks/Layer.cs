@@ -12,18 +12,12 @@ namespace Ai.MNIST.NeuralNetworks
         private Network ParentNetwork;
         int NeuronAmmount;
         private int LayerLevel;
-        public Layer( Network _ParentNetwork, int _NeuronAmmount, int _LayerLevel, bool FromJson = false, string _JsonFile = "" )
+        public Layer( Network _ParentNetwork, int _NeuronAmmount, int _LayerLevel )
         {
-            if( FromJson == false )
-            {
-                this.StNeurons = initialize_Neurons( _NeuronAmmount );
-                this.WeightsPreviousLayer = initialize_Weights( _ParentNetwork, LayerLevel, _NeuronAmmount );            
-            }
-            else
-            {
-                this.StNeurons = initializeFromJson_Neurons( _NeuronAmmount, _JsonFile, _LayerLevel );
-                this.WeightsPreviousLayer = initializeFromJson_Wheights( _JsonFile, _LayerLevel ); 
-            }
+
+            this.StNeurons = initialize_Neurons( _NeuronAmmount );
+            this.WeightsPreviousLayer = initialize_Weights( _ParentNetwork, LayerLevel, _NeuronAmmount );            
+            
             if( _LayerLevel == 0 )
             {
                 this.WeightsGradient = new double[ 784, _NeuronAmmount ];
@@ -36,7 +30,40 @@ namespace Ai.MNIST.NeuralNetworks
             this.ParentNetwork = _ParentNetwork;
             this.LayerLevel = _LayerLevel;
         }
+
+        public Layer( Network _ParentNetwork, double[,] Wheigts, double[] Biases, int _LayerLevel, int _NeuronAmmount )
+        {//Gets executed when loading network from json file
+            this.ParentNetwork = _ParentNetwork;
+            this.LayerLevel = _LayerLevel;
+            this.StNeurons = initialize_NeuronsJson( Biases );
+            this.WeightsPreviousLayer = Wheigts;
+            if( _LayerLevel == 0 )
+            {
+                this.WeightsGradient = new double[ 784, _NeuronAmmount ];
+            }
+            else
+            {
+                this.WeightsGradient = new double[ _ParentNetwork.LiNetwork[ _LayerLevel - 1 ], _NeuronAmmount ];
+            }
+        }
+
+        
+
+
+
+
         #region Json
+        public double[] GetBiasesToArray()
+        {
+            double[] biases = new double[ StNeurons.Length ];
+            int index = 0;
+            foreach( StNeuron neuron in StNeurons )
+            {
+                biases[ index ] = neuron.biases;
+                index++;
+            }
+            return biases;
+        }
         public void CreateJson( string outputlocation )
         {
             CreateWheigtsJson( outputlocation );
@@ -93,10 +120,24 @@ namespace Ai.MNIST.NeuralNetworks
         #endregion
         #region Initialization
 
+        private StNeuron[] initialize_NeuronsJson( double[] biases )
+        {
+            int NeuronCount = biases.Length;
+            StNeuron[] NeuronArray = new StNeuron[ NeuronCount ];
+            for( int neuronIndex = 0 ; neuronIndex < NeuronCount ; neuronIndex++ )
+            {
+                NeuronArray[ neuronIndex ] = new StNeuron
+                {
+                    biases = biases[ neuronIndex ],
+                };
+            }
+
+            return NeuronArray;
+        }
         private StNeuron[] initializeFromJson_Neurons( int NeuronAmmount, string JsonFile, int LayerLevel  )
         {
             StNeuron[] NeuronArray = new StNeuron[ NeuronAmmount ];
-            string JsonBiases = File.ReadAllText( Util.StandardJsonOutput + "" + JsonFile + "\\Layer" + ( LayerLevel + 1 ) + "Biases.json" );
+            string JsonBiases = File.ReadAllText( OutPuts.StandardJsonOutput + "" + JsonFile + "\\Layer" + ( LayerLevel + 1 ) + "Biases.json" );
             double[]? aBiases = JsonSerializer.Deserialize<double[]>( JsonBiases );
             if( aBiases == null )
             {
@@ -111,9 +152,10 @@ namespace Ai.MNIST.NeuralNetworks
             }
             return NeuronArray;
         }
+        
         private double[,] initializeFromJson_Wheights( string JsonFile, int LayerLevel )
         {
-            string JsonWheights = File.ReadAllText( Util.StandardJsonOutput + "" + JsonFile + "\\Layer" + ( LayerLevel + 1 ) + "Wheights.json");
+            string JsonWheights = File.ReadAllText( OutPuts.StandardJsonOutput + "" + JsonFile + "\\Layer" + ( LayerLevel + 1 ) + "Wheights.json");
             double[][]? aaWheights = JsonSerializer.Deserialize<double[][]>( JsonWheights );
             if( aaWheights == null )
             {

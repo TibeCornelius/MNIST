@@ -5,24 +5,18 @@ using System.IO;
 using Ai.MNIST.Data;
 using Tensorflow;
 using System.Text.Json;
+using Ai.MNIST.NeuralNetworks;
+using Ai.MNIST.NeuralNetworks.TrainingResults;
 
-namespace Ai.MNIST.NeuralNetworks
+namespace Ai.MNIST.Terminal
 {
     class Program
     {
-        Network? network;
-        private List< byte[,] > bTrainingList;
-        private List< string > sTrainingList; 
-        private List< byte[,] > bTestingList;
-        private List< string > sTestingList;
-        MNIST.Data.Image DataSet;
+        private Manager myManager;
+
         public Program()
         {
-            this.DataSet = new MNIST.Data.Image();
-            this.bTrainingList = new List< byte[,] >();
-            this.sTrainingList = new List<string>();
-            this.bTestingList = new List< byte[,] >();
-            this.sTestingList = new List< string >();
+            this.myManager = new Manager();
         }
 
         public void Sequence()
@@ -74,6 +68,7 @@ namespace Ai.MNIST.NeuralNetworks
         {
             int AmmountOfLayers = 3;
             List<int> Neurons = new List<int>();
+            NetworkValues settings = new();
             if( !StandartNetwork )
             {
                 Console.WriteLine("Chose the Ammount of Layers");
@@ -98,14 +93,14 @@ namespace Ai.MNIST.NeuralNetworks
                     int AmmountofNeurons = Convert.ToInt16( Console.ReadLine() );
                     Neurons.Add( AmmountofNeurons );
                 }
+                settings.SetCustom( AmmountOfLayers, Neurons.ToArray() );
             }
             else
             {
-                Neurons.Add( 400 );
-                Neurons.Add( 150 );            
+                settings.SetDefault();          
             }
-            Neurons.Add( 10 );
-            network = new Network( Neurons );
+            
+            myManager.StartNewNetwork( settings );
         }
 
         private void LoadInNetworkFromJson()
@@ -128,123 +123,126 @@ namespace Ai.MNIST.NeuralNetworks
                     }
                     else
                     {
-                        string JsonLayerCount = "";
+                        string JsonString = string.Empty;
                         try
                         {
-                            JsonLayerCount = File.ReadAllText( Util.StandardJsonOutput + "" + relativeOuptut + "\\LayerCount.json");
+                            JsonString = File.ReadAllText( OutPuts.StandardJsonOutput + "" + relativeOuptut + "\\LayerCount.json");
                         }
                         catch( FileNotFoundException )
                         {
                             Console.WriteLine("FileNotFound");
-                            continue;
+                            goto LoopEnd;
                         }
-                        List<int> Neurons = new List<int>();
-                        int Layercount = JsonSerializer.Deserialize<int>( JsonLayerCount );
-                        for( int layer = 0 ; layer < Layercount ; layer++ )
+                        try
                         {
-                            string JsonNeuronCount = File.ReadAllText( Util.StandardJsonOutput + "" + relativeOuptut + "\\Layer" + (layer + 1) +"NeuronCount.json"); 
-                            int NeuronCount =  JsonSerializer.Deserialize<int>( JsonNeuronCount );
-                            Neurons.Add( NeuronCount );
+                            NetworkJsonFormat JsonSettings = JsonSerializer.Deserialize<NetworkJsonFormat>( JsonString );
+                            myManager.LoadInNetworkFromJson( JsonSettings ); 
                         }
-                        bool isThisANewNetwork = false;
-                        network = new Network( Neurons, isThisANewNetwork, relativeOuptut ); 
-                        OutputNotRecieved = false;
+                        catch( Exception )
+                        {
+                            goto LoopEnd;
+                        }
+                        LoopEnd:;
                     }
                 }
             }
             else
             {
-                Console.WriteLine("Not yet implemented");
+                Console.WriteLine("Give the absolut location of the .json file");
+                bool OutputNotRecieved = true;
+                while ( OutputNotRecieved )
+                {
+                    string? Location = Console.ReadLine();
+                    if( Location == null )
+                    {
+                        Console.WriteLine("No output received");
+                        return;
+                    }
+                    else
+                    {
+                        try
+                        {
+                            string JsonString = File.ReadAllText( Location );
+                            NetworkJsonFormat? settings = JsonSerializer.Deserialize<NetworkJsonFormat>( JsonString );
+                            if( settings is null )
+                            {
+                                throw new Exception();
+                            }
+                            myManager.LoadInNetworkFromJson( settings );
+                        }
+                        catch
+                        {
+                            Console.WriteLine("Something went wrong try again");
+                            goto LoopEnd;
+                        }
+                        OutputNotRecieved = false;
+                    }
+                    LoopEnd:;
+                }
             }
         }
 
         private void SerializeWheightAndBiasesToJson()
         {
-            if( network == null )
-            {
-                Console.WriteLine("Neuralnetworkdoes not yet exist create or import one first");
-                return;            
-            }
+
             Console.WriteLine("Give the outputlocation");
             string? FileName = Console.ReadLine();
-            if( FileName != null )
+            if( FileName is not null )
             {
-                network.CreateJson( FileName );
-                //File.WriteAllText( "SavedWheights/" + FileName + ".json", JsonString );
+                myManager.SerializeWheightAndBiasesToJson( FileName );
             }
         }
 
 
         private void ImportSetOfTestingImages()
         {
-            if( network == null )
-            {
-                Console.WriteLine("Neuralnetworkdoes not yet exist create or import one first");
-                return;
-            }
-            foreach( MNIST.Data.Image image in Data.MNIST.ReadTestData() )
-            {
-                bTestingList.Add( image.Data );
-                sTestingList.Add( Convert.ToString( image.Label ) );
-            }
+            ImportImages settings = new();
 
-            Random random = new Random();
-            int AmmountImages;
+
+
             Console.WriteLine("How Many images do you want to import?");
-            AmmountImages = Convert.ToInt16( Console.ReadLine() );
+            settings.Ammount = Convert.ToInt16( Console.ReadLine() );
             Console.WriteLine("How Many Itteration do you want to run?");
-            int Itterations = Convert.ToInt16( Console.ReadLine() );
-            for( int Itteration = 0 ; Itteration < Itterations ; Itteration++ )
-            {
-                List< byte[,] > listToTrain = new List< byte[,] >();
-                List< string > sListToTrain = new List<string>();
-                
-                for( int index = 0 ; index < AmmountImages ; index++ )
-                {
-                    int randomnumber = random.Next( bTrainingList.Count );
-                    listToTrain.Add( bTestingList[ randomnumber ] );
-                    sListToTrain.Add( sTestingList[ randomnumber ] );
-                }
-                network.Test( listToTrain, sListToTrain, Itteration + 1 );
-            }
+            settings.Itterations = Convert.ToInt16( Console.ReadLine() );
 
-            bTestingList.Clear();
-            sTestingList.Clear();
+            myManager.ImportSetOfTestingImages( settings );
         }
 
         private void ImportSetOfTrainingImages()
         {
-            if( network == null )
-            {
-                Console.WriteLine("Neuralnetworkdoes not yet exist create or import one first");
-                return;
-            }
-            foreach( MNIST.Data.Image image in Data.MNIST.ReadTrainingData() )
-            {
-                bTrainingList.Add( image.Data );
-                sTrainingList.Add( Convert.ToString( image.Label ) );
-            }
-            Random random = new Random();
-            int AmmountImages;
+            ImportImages settings = new();
+
+
+
             Console.WriteLine("How Many images do you want to import?");
-            AmmountImages = Convert.ToInt16( Console.ReadLine() );
+            settings.Ammount = Convert.ToInt16( Console.ReadLine() );
             Console.WriteLine("How Many Itteration do you want to run?");
-            int Itterations = Convert.ToInt16( Console.ReadLine() );
-            for( int Itteration = 0 ; Itteration < Itterations ; Itteration++ )
+            settings.Itterations = Convert.ToInt16( Console.ReadLine() );
+            Console.WriteLine("Do you want to display the results");
+            Console.WriteLine("( Yes or true )");
+            string? Input = Console.ReadLine();
+            bool DisplayResults = ( Input == "true" ) || ( Input == "Yes" );
+
+            if( DisplayResults )
             {
-                List< byte[,] > listToTrain = new List< byte[,] >();
-                List< string > sListToTrain = new List<string>();
-                
-                for( int index = 0 ; index < AmmountImages ; index++ )
-                {
-                    int randomnumber = random.Next( bTrainingList.Count );
-                    listToTrain.Add( bTrainingList[ randomnumber ] );
-                    sListToTrain.Add( sTrainingList[ randomnumber ] );
-                }
-                network.Train( listToTrain, sListToTrain, Itteration + 1 );
+                myManager.network.displayBatchResults = DisplayBatchResults;
+                myManager.network.displayResults = DisplayImageResults;
+                myManager.ImportSetOfTrainingImages( settings, true );
             }
-            bTrainingList.Clear();
-            sTrainingList.Clear();
+            else
+            {
+                myManager.ImportSetOfTrainingImages( settings );
+            }
+        }
+        public void DisplayImageResults( ImageData image )
+        {
+            //Console.WriteLine("Hello world");
+        }
+        public void DisplayBatchResults( TrainingBatch trainingBatch )
+        {
+            Console.WriteLine( "Average Costs" + trainingBatch.TotalAverageCost );
+            Console.WriteLine( "Ammount of correct guesses " + trainingBatch.CorrectGuesses );
+            Console.WriteLine( "Training session " + trainingBatch.TrainingSession );
         }
 
         static void Main(string[] args)
