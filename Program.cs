@@ -76,11 +76,11 @@ namespace Ai.MNIST.Terminal
             NetworkValues settings = new();
             if( !StandartNetwork )
             {
-                Console.WriteLine("Chose the Ammount of Layers");
+                Console.WriteLine("Chose the Ammount of hidden Layers");
                 bool inValidAmmount = true;
                 while ( inValidAmmount )
                 {
-                    AmmountOfLayers = Convert.ToInt16( Console.ReadLine() ) - 1;
+                    AmmountOfLayers = Convert.ToInt16( Console.ReadLine() );
                     if( AmmountOfLayers > 0 && AmmountOfLayers < 5 )
                     {
                         inValidAmmount = false;
@@ -91,14 +91,14 @@ namespace Ai.MNIST.Terminal
                     }
                 }
                 Console.WriteLine("Enter Ammount of neurons in each layer");
-
                 for( int layer = 0 ; layer < AmmountOfLayers ; layer++ )
                 {
                     Console.WriteLine($"Hidden Layer { layer }");
                     int AmmountofNeurons = Convert.ToInt16( Console.ReadLine() );
                     Neurons.Add( AmmountofNeurons );
                 }
-                settings.SetCustom( AmmountOfLayers, Neurons.ToArray() );
+                Neurons.Add( 10 );
+                settings.SetCustom( AmmountOfLayers + 1, Neurons.ToArray() );
             }
             else
             {

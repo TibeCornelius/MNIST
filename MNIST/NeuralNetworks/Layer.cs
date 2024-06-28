@@ -273,21 +273,10 @@ namespace Ai.MNIST.NeuralNetworks
         {
             for( int indexNeuron = 0 ; indexNeuron < StNeurons.Length ; indexNeuron++ )
             {
-                StNeurons[ indexNeuron ].output = SigmoidFunction( StNeurons[ indexNeuron ].input );
+                StNeurons[ indexNeuron ].output = ActivationFunction.Sigmoid( StNeurons[ indexNeuron ].input );
             }
         }
-        private double SigmoidFunction( double WeightedInput )
-        {
-            double output = 1 / ( 1 + Math.Exp( -WeightedInput));
-
-            return output;
-        }
-
-        private double SigmoidDerrivative( double WeightedInput )
-        {
-            double Activation = SigmoidFunction( WeightedInput );
-            return Activation * ( 1 - Activation );
-        }
+        
         #endregion
         #region Gradient
 
@@ -298,7 +287,7 @@ namespace Ai.MNIST.NeuralNetworks
             for( int index = 0 ; index < nodeValues.Length ; index++ )
             {
                 double CostDerrivative = NodeCostDerrivative( StNeurons[ index ].output, excpectedOutputs[ index ]);
-                double activationDerrivative = SigmoidDerrivative( StNeurons[ index ].input );
+                double activationDerrivative = ActivationFunction.SigmoidDx( StNeurons[ index ].input );
                 nodeValues[ index ] = activationDerrivative * CostDerrivative; 
             }
             return nodeValues;
@@ -315,7 +304,7 @@ namespace Ai.MNIST.NeuralNetworks
                     double WeightedInput = oldLayer.WeightsPreviousLayer[ newNodeindex, oldNodeIndex ];
                     newNodeValue += WeightedInput * oldNodeValues[ oldNodeIndex ]; 
                 }
-                newNodeValue *= SigmoidDerrivative(StNeurons[ newNodeindex ].input );
+                newNodeValue *= ActivationFunction.SigmoidDx( StNeurons[ newNodeindex ].input );
                 newNodeValues[ newNodeindex ] = newNodeValue;
             }
 
