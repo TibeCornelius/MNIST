@@ -11,19 +11,42 @@ namespace Ai.MNIST.Data
         private List<string> myTestingLabels = TestingLabels;
         private Random myRandom = new Random();
 
-        public Image GetSingleTrainingImage()
+        public Image GetSingleTrainingImage( bool AddNoise = false )
         {
             int index = myRandom.Next( 0, myTestingImages.Count );
-            return new Image( myTrainingImages[ index ], myTrainingLabes[ index ] );
+            return AddNoise ? 
+            new Image( AddNoiseToImage( myTrainingImages[ index ] ), myTrainingLabes[ index ] ): 
+            new Image( myTrainingImages[ index ], myTrainingLabes[ index ] );
         }
 
-        public Image GetSingleTestingImage()
+        public Image GetSingleTestingImage( bool AddNoise = false )
         {
             int index = myRandom.Next( 0, myTestingImages.Count );
-            return new Image( myTestingImages[ index ], myTestingLabels[ index ] );
+            return AddNoise ?
+            new Image( AddNoiseToImage(myTestingImages[ index ] ), myTestingLabels[ index ] ):
+            new Image( myTestingImages[ index ], myTestingLabels[ index ] );
         }
 
-        public ToImportImages GetSetOfImages( int Ammount, Mode mode )
+        public byte[,] AddNoiseToImage( byte[,] image )
+        {
+            for (int row = 0; row < image.GetLength( 0 ); row++)
+            {
+                for (int column = 0; column < image.GetLength( 1 ); column++)
+                {
+                    if ( image[ row, column ] < 200)
+                    {
+                        if ( myRandom.NextDouble() < 0.1)
+                        {
+                            int noise = myRandom.Next( 0, ( 256 - image[row, column] ) / 2 );
+                            image[ row, column ] = ( byte )Math.Min( 255, image[ row, column ] + noise );
+                        }
+                    }
+                }
+            }
+            return image;
+        }
+
+        public ToImportImages GetSetOfImages( int Ammount, Mode mode, bool AddNoise = false )
         {
             
             List<byte[,]> Images = mode switch
@@ -44,7 +67,15 @@ namespace Ai.MNIST.Data
             for( int imageIndex = 0 ; imageIndex < Ammount ; imageIndex++ )
             {
                 int index = myRandom.Next( 0, ListLenght );
-                ToImport.Add( Images[ index ] );
+                if( AddNoise )
+                {
+                    byte[,] image = AddNoiseToImage( Images[ index ] );
+                    ToImport.Add( image );
+                }
+                else
+                {
+                    ToImport.Add( Images[ index ] );
+                }
                 stringToImport.Add( Labels[ index ] );
             }
             return new ToImportImages( Ammount, ToImport, stringToImport );

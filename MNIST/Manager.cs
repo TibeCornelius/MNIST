@@ -81,13 +81,13 @@ namespace Ai.MNIST.NeuralNetworks
             return new Data.Data( bTrainingList, sTrainingList, bTestingList, sTestingList );
         }
 
-        public Image GetSingTrainingleImage()
+        public Image GetSingTrainingleImage( bool AddNoise )
         {
-            return myDataSet.GetSingleTrainingImage();
+            return myDataSet.GetSingleTrainingImage( AddNoise );
         }
-        public Image GetSingleTestingImage()
+        public Image GetSingleTestingImage( bool AddNoise )
         {
-            return myDataSet.GetSingleTestingImage();
+            return myDataSet.GetSingleTestingImage( AddNoise );
         }
         public TrainingBatch ImportSingleImage( Image image )
         {
@@ -133,7 +133,7 @@ namespace Ai.MNIST.NeuralNetworks
         }
 
 
-        public List<TrainingBatch> ImportSetOfImages( ImportSettings trainingImages, Mode mode, bool iwillDisplayResults )
+        public List<TrainingBatch> ImportSetOfImages( ImportSettings trainingImages, Mode mode, bool iwillDisplayResults, bool AddNoise = false )
         {
             if( network == null )
             {
@@ -145,7 +145,7 @@ namespace Ai.MNIST.NeuralNetworks
             int Itterations = trainingImages.Itterations;
             for( int Itteration = 0 ; Itteration < Itterations ; Itteration++ )
             {
-                ToImportImages importSettings = myDataSet.GetSetOfImages( trainingImages.Ammount, mode );
+                ToImportImages importSettings = myDataSet.GetSetOfImages( trainingImages.Ammount, mode, AddNoise );
                 if ( mode == Mode.Testing )
                 {
                     trainingResults.Add( network.Test( importSettings, Itteration + 1 ) );
@@ -164,7 +164,6 @@ namespace Ai.MNIST.NeuralNetworks
             }
             return trainingResults;
         }
-
     }
 }
 

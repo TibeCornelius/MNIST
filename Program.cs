@@ -242,9 +242,14 @@ namespace Ai.MNIST.Terminal
                 string? Input = Console.ReadLine();
                 DisplayResults = ( Input == "true" ) || ( Input == "Yes" );
             }
-            myManager.ImportSetOfImages( settings, mode, DisplayResults );
             myManager.network.displayBatchResults = DisplayBatchResults;
             myManager.network.displayResults = DisplayImageResults;
+
+            Console.WriteLine("Do you want to add noise to the image");
+            Console.WriteLine("( Yes or true )");
+            string? NoisInput = Console.ReadLine();
+            bool AddNoise = ( NoisInput == "true" ) || ( NoisInput == "Yes" );
+            myManager.ImportSetOfImages( settings, mode, DisplayResults, AddNoise );
 
         }
         public void DisplayImageResults( ImageData image )
