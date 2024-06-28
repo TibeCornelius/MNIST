@@ -3,7 +3,7 @@ using System.Text.Json;
 namespace Ai.MNIST.NeuralNetworks
 {
 
-    public class Layer
+    public sealed class Layer
     {
         public double[,] WeightsPreviousLayer;
         public double[,] WeightsGradient;

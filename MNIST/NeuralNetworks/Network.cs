@@ -4,7 +4,7 @@ using Ai.MNIST.Util;
 
 namespace Ai.MNIST.NeuralNetworks
 {
-    public class Network
+    public sealed class Network
     {
         public List<Layer> NetworkLayers;
         public List<int> LiNetwork;
@@ -33,14 +33,43 @@ namespace Ai.MNIST.NeuralNetworks
             this.OurResultsContainer = new Container();
             initializeFromJson( JsonSettings );
         }
-
-#region Json
-        public void CreateJson( string OuputLocation )
+#region TrainingStats
+        public void LoadInStatsFromJson()
         {
-            Directory.CreateDirectory(".\\SavedSettings\\" + OuputLocation );
+
+        }
+#endregion
+#region Json
+        public void SerializeStatsToJson( string OutputLocation, bool DefaultLocation )
+        {
+            if( DefaultLocation )
+            {
+                Directory.CreateDirectory(".\\SavedStats\\" + OutputLocation );
+                string JsonString = JsonSerializer.Serialize( OurResultsContainer );
+                File.WriteAllText( ".\\SavedStats\\" + OutputLocation + "\\Stats.json", JsonString );
+            }
+            else
+            {
+                Directory.CreateDirectory( OutputLocation );
+                string JsonString = JsonSerializer.Serialize( OurResultsContainer );
+                File.WriteAllText( OutputLocation + "\\Stats.json", JsonString );
+            }
+        }
+        public string CreateJson( string OuputLocation, bool DefaultLocation )
+        {
             NetworkJsonFormat jsonClass = new( NetworkLayers.Count, LiNetwork.ToArray(), GetAllWheights(), GetAllBiases() );
             string NetworkJson = JsonSerializer.Serialize( jsonClass );
-            File.WriteAllText( ".\\SavedSettings\\" + OuputLocation + "\\LayerCount.json", NetworkJson ); 
+            if( DefaultLocation )
+            {
+                Directory.CreateDirectory(".\\SavedSettings\\" + OuputLocation );
+                File.WriteAllText( ".\\SavedSettings\\" + OuputLocation + "\\NetworkSettings.json", NetworkJson );
+            }
+            else
+            {
+                Directory.CreateDirectory( OuputLocation );
+                File.WriteAllText( OuputLocation + "\\NetworkSettings.json", NetworkJson );
+            }
+            return NetworkJson; 
         }
         public List<double[]> GetAllBiases()
         {
@@ -76,6 +105,7 @@ namespace Ai.MNIST.NeuralNetworks
             foreach( int NeuronCount in LiNetwork )
             {
                 Layer layer = new( this, Converter.JaggedToArray2D( JsonSettings.Weights[ index ] ), JsonSettings.Biases[ index ], index, JsonSettings.NeuronCount[ index ] );
+                NetworkLayers.Add( layer );
                 index++;
             }
         }
@@ -98,11 +128,13 @@ namespace Ai.MNIST.NeuralNetworks
             double returnvalue = WeightedInput / 255;
             return returnvalue;
         }
-        public TrainingBatch Train( List<byte[,]> images, List<string> labels, int TrainingSession )
+        public TrainingBatch Train( ToImportImages ImportedImages, int TrainingSession )
         {
             List<ImportedImage> LiStImportedImages = new List<ImportedImage>();
             int CorrectGuesses = 0;
             TrainingBatch myTraningResults = new TrainingBatch( TrainingSession );
+            List<byte[,]> images = ImportedImages.Images;
+            List<string> labels = ImportedImages.Labels;
             for( int imageIndex = 0 ; imageIndex < images.Count ; imageIndex++ )
             {
                 ImportedImage StImportedImage = new ImportedImage
@@ -140,7 +172,7 @@ namespace Ai.MNIST.NeuralNetworks
             OurResultsContainer.OurTrainingResults.Add( myTraningResults );
             return myTraningResults;
         }
-        public TrainingBatch Train( List<byte[,]> images, List<string> labels, int TrainingSession, bool iwillDisplayResults )
+        public TrainingBatch Train( ToImportImages ImportedImages, int TrainingSession , bool iwillDisplayResults )
         {
             if( displayResults is null || displayBatchResults is null )
             {
@@ -149,7 +181,9 @@ namespace Ai.MNIST.NeuralNetworks
             List<ImportedImage> LiStImportedImages = new List<ImportedImage>();
             int CorrectGuesses = 0;
             TrainingBatch myTraningResults = new TrainingBatch( TrainingSession );
-            for( int imageIndex = 0 ; imageIndex < images.Count ; imageIndex++ )
+            List<byte[,]> images = ImportedImages.Images;
+            List<string> labels = ImportedImages.Labels;
+            for( int imageIndex = 0 ; imageIndex < ImportedImages.Count ; imageIndex++ )
             {
                 ImportedImage StImportedImage = new ImportedImage
                 {
@@ -190,12 +224,14 @@ namespace Ai.MNIST.NeuralNetworks
             displayBatchResults( myTraningResults );
             return myTraningResults;
         }
-        public TrainingBatch Test( List<byte[,]> images, List<string> labels, int TrainingSession )
+        public TrainingBatch Test( ToImportImages ImportedImages, int TrainingSession )
         {
             List<ImportedImage> LiStImportedImages = new List<ImportedImage>();
             int CorrectGuesses = 0;
             TrainingBatch myResults = new TrainingBatch( TrainingSession );
-            for( int imageIndex = 0 ; imageIndex < images.Count ; imageIndex++ )
+            List<byte[,]> images = ImportedImages.Images;
+            List<string> labels = ImportedImages.Labels;
+            for( int imageIndex = 0 ; imageIndex < ImportedImages.Count ; imageIndex++ )
             {
                 ImportedImage StImportedImage = new ImportedImage
                 {
@@ -226,8 +262,51 @@ namespace Ai.MNIST.NeuralNetworks
             OurResultsContainer.OurTestingResults.Add( myResults );
             return myResults;
         }
+        public TrainingBatch Test( List<byte[,]> images, List<string> labels, int TrainingSession, bool iwillDisplayResults )
+        {
+            if( displayResults is null || displayBatchResults is null )
+            {
+                throw new Exception();
+            }
+            List<ImportedImage> LiStImportedImages = new List<ImportedImage>();
+            int CorrectGuesses = 0;
+            TrainingBatch myResults = new TrainingBatch( TrainingSession );
+            for( int imageIndex = 0 ; imageIndex < images.Count ; imageIndex++ )
+            {
+                ImportedImage StImportedImage = new ImportedImage
+                {
+                    image = images[imageIndex],
+                    input = images[imageIndex],
+                    output = ByteInput(images[imageIndex]),
+                    excpectedOutput = CalculateCorrectOutputs(labels[imageIndex]),
+                    label = labels[imageIndex]
+                };
+                int CorrectGues = Convert.ToInt16( StImportedImage.label );
+                foreach ( Layer layer in NetworkLayers )
+                {
+                    layer.CalculateInputsEveryNeuron( StImportedImage );
+                    layer.CalculateOutputs();
+                }
+                StImportedImage.cost = Cost( StImportedImage );
+                int iGuessed = GetHighestOutput( StImportedImage );
+                ImageData image = new ImageData( CorrectGues, StImportedImage.cost, iGuessed, images[ imageIndex ],  NetworkLayers[ NetworkLayers.Count - 1 ].StNeurons );
+                myResults.ImageData.Add( image );
+                displayResults( image );
+                if( iGuessed == CorrectGues )
+                {
+                    CorrectGuesses++;
+                }
+                LiStImportedImages.Add( StImportedImage );
+            }
+            double TotalAverageCost = TotalCost( LiStImportedImages );
+            myResults.CorrectGuesses = CorrectGuesses;
+            myResults.TotalAverageCost = TotalAverageCost;
+            displayBatchResults( myResults );
+            OurResultsContainer.OurTestingResults.Add( myResults );
+            return myResults;
+        }
 
-        public TrainingBatch ImportSingleImage( Image image )
+        internal TrainingBatch ImportSingleImage( Image image )
         {
             TrainingBatch results = new TrainingBatch( 1 );
             ImportedImage StImportedImage = new ImportedImage

@@ -3,6 +3,11 @@ using System.Drawing.Imaging;
 
 namespace Ai.MNIST.Data
 {
+    public enum Mode
+    {
+        Training,
+        Testing
+    }
     public static class MNIST
     {
         private const string TrainImages = @"C:\Users\corne\Desktop\Everything\C#\Ai\AiNumbers\MNIST\DataBase\train-images-idx3-ubyte\train-images-idx3-ubyte";
@@ -13,32 +18,27 @@ namespace Ai.MNIST.Data
         private const string TrainLabels = @"C:\Users\corne\Desktop\Everything\C#\Ai\AiMaui\Ai\MNIST\DataBase\train-labels-idx1-ubyte\train-labels-idx1-ubyte";
         private const string TestImages = @"C:\Users\corne\Desktop\Everything\C#\Ai\AiMaui\Ai\MNIST\DataBase\t10k-images-idx3-ubyte\t10k-images-idx3-ubyte";
         private const string TestLabels = @"C:\Users\corne\Desktop\Everything\C#\Ai\AiMaui\Ai\MNIST\DataBase\t10k-labels-idx1-ubyte\t10k-labels-idx1-ubyte";*/
-        enum Mode
-        {
-            Training,
-            Testing
-        }
-        public static IEnumerable< Image > ReadTrainingData()
+        public static IEnumerable< MNISTImage > ReadTrainingData()
         {
             Mode mode = Mode.Training;
-            foreach (var item in Read( TrainImages, TrainLabels, mode  ))
+            foreach ( MNISTImage item in Read( TrainImages, TrainLabels, mode  ))
             {
                 yield return item;
             }
 
         }
 
-        public static IEnumerable< Image > ReadTestData()
+        public static IEnumerable< MNISTImage > ReadTestData()
         {
             Mode mode = Mode.Testing;
-            foreach (var item in Read(TestImages, TestLabels, mode ))
+            foreach ( MNISTImage item in Read(TestImages, TestLabels, mode ))
             {
                 yield return item;
             }
 
         }
 
-        private static IEnumerable< Image > Read(string imagesPath, string labelsPath, Mode mode)
+        private static IEnumerable< MNISTImage > Read(string imagesPath, string labelsPath, Mode mode)
         {
             using ( BinaryReader labels = new BinaryReader(new FileStream(labelsPath, FileMode.Open)))
             {
@@ -64,7 +64,7 @@ namespace Ai.MNIST.Data
 
                         arr.ForEach((j,k) => arr[j, k] = bytes[j * height + k]);
 
-                        yield return new Image()
+                        yield return new MNISTImage()
                         {
                             Data = arr,
                             Label = labels.ReadByte()
@@ -110,7 +110,7 @@ namespace Ai.MNIST.Data
 #pragma warning restore CA1416 // Validate platform compatibility
         }*/
     }
-    public class Image
+    public class MNISTImage
     {
         public byte Label { get; set; }
         public byte[,] Data { get; set; }

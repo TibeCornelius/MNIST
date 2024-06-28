@@ -31,16 +31,18 @@ namespace Ai.MNIST.Terminal
                 Console.WriteLine("4 --> Load a Network from a json File");
                 Console.WriteLine("5 --> Start new Network");
                 Console.WriteLine("6 --> Start StandartNetwork");
-                Console.WriteLine("7 --> ExitProgram ");
+                Console.WriteLine("7 --> Serialize current network history");
+                Console.WriteLine("8 --> Load in network history form .json");
+                Console.WriteLine("9 --> ExitProgram ");
                 
                 int Choice = Convert.ToInt16( Console.ReadLine() );
                 switch( Choice )
                 {
                     case 1:
-                        ImportSetOfTrainingImages();
+                        ImportSetOfImages( Mode.Training );
                         break;
                     case 2:
-                        ImportSetOfTestingImages();
+                        ImportSetOfImages( Mode.Testing );
                         break;
                     case 3:
                         SerializeWheightAndBiasesToJson();
@@ -55,6 +57,9 @@ namespace Ai.MNIST.Terminal
                         StartNewNetwork( true );
                         break;
                     case 7:
+                        SerializeCurrentHistory();
+                        break;
+                    case 9:
                         Running = false;
                         break;
                     default:
@@ -102,7 +107,40 @@ namespace Ai.MNIST.Terminal
             
             myManager.StartNewNetwork( settings );
         }
+        private void SerializeCurrentHistory()
+        {
+            Console.WriteLine("Give the outputlocation");
+            string? FileName = Console.ReadLine();
+            if( FileName is not null )
+            {
+                myManager.SerializeCurrentHistory( FileName, true );
+            }
+        }
+        private string GetJsonString()
+        {
+            Console.WriteLine("Give the Ouptut Folder");
 
+            string? relativeOuptut = Console.ReadLine();
+            if( relativeOuptut == null )
+            {
+                Console.WriteLine("No output received");
+                return string.Empty;
+            }
+            else
+            {
+                string JsonString = string.Empty;
+                try
+                {
+                    JsonString = File.ReadAllText( OutPuts.StandardJsonOutput + "" + relativeOuptut + "\\LayerCount.json");
+                }
+                catch( FileNotFoundException )
+                {
+                    Console.WriteLine("FileNotFound");
+                }
+                return JsonString;
+            }
+
+        }
         private void LoadInNetworkFromJson()
         {
             Console.WriteLine("Do you want the standard input");
@@ -115,34 +153,27 @@ namespace Ai.MNIST.Terminal
                 bool OutputNotRecieved = true;
                 while ( OutputNotRecieved )
                 {
-                    string? relativeOuptut = Console.ReadLine();
-                    if( relativeOuptut == null )
+                    string JsonString = GetJsonString();
+                    if( JsonString == string.Empty )
                     {
-                        Console.WriteLine("No output received");
-                        return;
+
                     }
                     else
                     {
-                        string JsonString = string.Empty;
                         try
                         {
-                            JsonString = File.ReadAllText( OutPuts.StandardJsonOutput + "" + relativeOuptut + "\\LayerCount.json");
-                        }
-                        catch( FileNotFoundException )
-                        {
-                            Console.WriteLine("FileNotFound");
-                            goto LoopEnd;
-                        }
-                        try
-                        {
-                            NetworkJsonFormat JsonSettings = JsonSerializer.Deserialize<NetworkJsonFormat>( JsonString );
+                            NetworkJsonFormat? JsonSettings = JsonSerializer.Deserialize<NetworkJsonFormat>( JsonString );
+                            if( JsonSettings is null )
+                            {
+                                throw new Exception();
+                            }
                             myManager.LoadInNetworkFromJson( JsonSettings ); 
+                            OutputNotRecieved = false;
                         }
                         catch( Exception )
                         {
-                            goto LoopEnd;
+
                         }
-                        LoopEnd:;
                     }
                 }
             }
@@ -152,13 +183,8 @@ namespace Ai.MNIST.Terminal
                 bool OutputNotRecieved = true;
                 while ( OutputNotRecieved )
                 {
-                    string? Location = Console.ReadLine();
-                    if( Location == null )
-                    {
-                        Console.WriteLine("No output received");
-                        return;
-                    }
-                    else
+                    string? Location = GetJsonString();
+                    if( Location != string.Empty )
                     {
                         try
                         {
@@ -169,15 +195,17 @@ namespace Ai.MNIST.Terminal
                                 throw new Exception();
                             }
                             myManager.LoadInNetworkFromJson( settings );
+                            OutputNotRecieved = false;
                         }
                         catch
                         {
                             Console.WriteLine("Something went wrong try again");
-                            goto LoopEnd;
                         }
-                        OutputNotRecieved = false;
                     }
-                    LoopEnd:;
+                    else
+                    {
+                        Console.WriteLine("No output received");
+                    }
                 }
             }
         }
@@ -189,50 +217,35 @@ namespace Ai.MNIST.Terminal
             string? FileName = Console.ReadLine();
             if( FileName is not null )
             {
-                myManager.SerializeWheightAndBiasesToJson( FileName );
+                myManager.SerializeWheightAndBiasesToJson( FileName, true );
             }
         }
 
 
-        private void ImportSetOfTestingImages()
+        private void ImportSetOfImages( Mode mode )
         {
-            ImportImages settings = new();
-
-
+            if ( myManager.network is null )
+            {
+                return;
+            }
+            ImportSettings settings = new();
 
             Console.WriteLine("How Many images do you want to import?");
             settings.Ammount = Convert.ToInt16( Console.ReadLine() );
             Console.WriteLine("How Many Itteration do you want to run?");
             settings.Itterations = Convert.ToInt16( Console.ReadLine() );
-
-            myManager.ImportSetOfTestingImages( settings );
-        }
-
-        private void ImportSetOfTrainingImages()
-        {
-            ImportImages settings = new();
-
-
-
-            Console.WriteLine("How Many images do you want to import?");
-            settings.Ammount = Convert.ToInt16( Console.ReadLine() );
-            Console.WriteLine("How Many Itteration do you want to run?");
-            settings.Itterations = Convert.ToInt16( Console.ReadLine() );
-            Console.WriteLine("Do you want to display the results");
-            Console.WriteLine("( Yes or true )");
-            string? Input = Console.ReadLine();
-            bool DisplayResults = ( Input == "true" ) || ( Input == "Yes" );
-
-            if( DisplayResults )
+            bool DisplayResults = false;
+            if( mode == Mode.Training )
             {
-                myManager.network.displayBatchResults = DisplayBatchResults;
-                myManager.network.displayResults = DisplayImageResults;
-                myManager.ImportSetOfTrainingImages( settings, true );
+                Console.WriteLine("Do you want to display the results");
+                Console.WriteLine("( Yes or true )");
+                string? Input = Console.ReadLine();
+                DisplayResults = ( Input == "true" ) || ( Input == "Yes" );
             }
-            else
-            {
-                myManager.ImportSetOfTrainingImages( settings );
-            }
+            myManager.ImportSetOfImages( settings, mode, DisplayResults );
+            myManager.network.displayBatchResults = DisplayBatchResults;
+            myManager.network.displayResults = DisplayImageResults;
+
         }
         public void DisplayImageResults( ImageData image )
         {
