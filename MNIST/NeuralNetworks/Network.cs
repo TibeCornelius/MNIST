@@ -262,7 +262,7 @@ namespace Ai.MNIST.NeuralNetworks
             OurResultsContainer.OurTestingResults.Add( myResults );
             return myResults;
         }
-        public TrainingBatch Test( List<byte[,]> images, List<string> labels, int TrainingSession, bool iwillDisplayResults )
+        public TrainingBatch Test( ToImportImages ImportedImages, int TrainingSession, bool iwillDisplayResults )
         {
             if( displayResults is null || displayBatchResults is null )
             {
@@ -270,8 +270,10 @@ namespace Ai.MNIST.NeuralNetworks
             }
             List<ImportedImage> LiStImportedImages = new List<ImportedImage>();
             int CorrectGuesses = 0;
+            List<byte[,]> images = ImportedImages.Images;
+            List<string> labels = ImportedImages.Labels;
             TrainingBatch myResults = new TrainingBatch( TrainingSession );
-            for( int imageIndex = 0 ; imageIndex < images.Count ; imageIndex++ )
+            for( int imageIndex = 0 ; imageIndex < ImportedImages.Count ; imageIndex++ )
             {
                 ImportedImage StImportedImage = new ImportedImage
                 {

@@ -148,7 +148,14 @@ namespace Ai.MNIST.NeuralNetworks
                 ToImportImages importSettings = myDataSet.GetSetOfImages( trainingImages.Ammount, mode, AddNoise );
                 if ( mode == Mode.Testing )
                 {
-                    trainingResults.Add( network.Test( importSettings, Itteration + 1 ) );
+                    if( iwillDisplayResults )
+                    {
+                        trainingResults.Add( network.Test( importSettings, Itteration + 1 , iwillDisplayResults ));
+                    }
+                    else
+                    {
+                        trainingResults.Add( network.Test( importSettings, Itteration + 1 ) );
+                    }
                 }
                 else
                 {

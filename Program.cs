@@ -131,7 +131,7 @@ namespace Ai.MNIST.Terminal
                 string JsonString = string.Empty;
                 try
                 {
-                    JsonString = File.ReadAllText( OutPuts.StandardJsonOutput + "" + relativeOuptut + "\\LayerCount.json");
+                    JsonString = File.ReadAllText( OutPuts.StandardJsonOutput + "" + relativeOuptut + "\\NetworkSettings.json");
                 }
                 catch( FileNotFoundException )
                 {
@@ -235,13 +235,12 @@ namespace Ai.MNIST.Terminal
             Console.WriteLine("How Many Itteration do you want to run?");
             settings.Itterations = Convert.ToInt16( Console.ReadLine() );
             bool DisplayResults = false;
-            if( mode == Mode.Training )
-            {
-                Console.WriteLine("Do you want to display the results");
-                Console.WriteLine("( Yes or true )");
-                string? Input = Console.ReadLine();
-                DisplayResults = ( Input == "true" ) || ( Input == "Yes" );
-            }
+
+            Console.WriteLine("Do you want to display the results");
+            Console.WriteLine("( Yes or true )");
+            string? Input = Console.ReadLine();
+            DisplayResults = ( Input == "true" ) || ( Input == "Yes" );
+            
             myManager.network.displayBatchResults = DisplayBatchResults;
             myManager.network.displayResults = DisplayImageResults;
 
