@@ -135,36 +135,7 @@ namespace Ai.MNIST.NeuralNetworks
 
             return NeuronArray;
         }
-        private StNeuron[] initializeFromJson_Neurons( int NeuronAmmount, string JsonFile, int LayerLevel  )
-        {
-            StNeuron[] NeuronArray = new StNeuron[ NeuronAmmount ];
-            string JsonBiases = File.ReadAllText( OutPuts.StandardJsonOutput + "" + JsonFile + "\\Layer" + ( LayerLevel + 1 ) + "Biases.json" );
-            double[]? aBiases = JsonSerializer.Deserialize<double[]>( JsonBiases );
-            if( aBiases == null )
-            {
-                throw new NullReferenceException("Biases from json where NULL");
-            }
-            for( int NeuronCount = 0 ; NeuronCount < NeuronAmmount ; NeuronCount++ )
-            {
-                StNeuron myNeuron = new StNeuron{
-                    biases = aBiases[ NeuronCount ],
-                };
-                NeuronArray[ NeuronCount ] = myNeuron;
-            }
-            return NeuronArray;
-        }
         
-        private double[,] initializeFromJson_Wheights( string JsonFile, int LayerLevel )
-        {
-            string JsonWheights = File.ReadAllText( OutPuts.StandardJsonOutput + "" + JsonFile + "\\Layer" + ( LayerLevel + 1 ) + "Wheights.json");
-            double[][]? aaWheights = JsonSerializer.Deserialize<double[][]>( JsonWheights );
-            if( aaWheights == null )
-            {
-                throw new NullReferenceException("Wheights from json where NULL");
-            }
-            double[,] Wheigts = ReConvertJaggedArray( aaWheights );
-            return Wheigts;
-        }
         private double[,] ReConvertJaggedArray( double[][] aaWheights )
         {
             int rowCount = aaWheights.Length;
@@ -234,20 +205,20 @@ namespace Ai.MNIST.NeuralNetworks
         {
             if( LayerLevel != 0 )
             {
-                RefStNeuron prevLayerNeurons = ParentNetwork.GetNeuronsPrevLayer( LayerLevel );
-                for( int indexNeuron = 0 ; indexNeuron < StNeurons.Length ; indexNeuron++ )
+                Parallel.For( 0, StNeurons.Length, indexNeuron  =>
                 {
+                    RefStNeuron prevLayerNeurons = ParentNetwork.GetNeuronsPrevLayer( LayerLevel );
                     double input = StNeurons[ indexNeuron ].biases;
                     for( int index = 0 ; index < ParentNetwork.NetworkLayers[ LayerLevel - 1 ].StNeurons.Length ; index++ )
                     {
                         input += prevLayerNeurons.Neurons[ index ].output * WeightsPreviousLayer[ index, indexNeuron ];
                     }
                     StNeurons[ indexNeuron ].input = input;
-                }
+                });
             }
             else
             {
-                for( int indexNeuron = 0 ; indexNeuron < StNeurons.Length ; indexNeuron++ )
+                Parallel.For( 0, StNeurons.Length, indexNeuron =>
                 {
                     double input = StNeurons[ indexNeuron ].biases;
             
@@ -256,7 +227,7 @@ namespace Ai.MNIST.NeuralNetworks
                         input += StImportedImage.output[ index ] * WeightsPreviousLayer[ index, indexNeuron ];
                     }
                     StNeurons[ indexNeuron ].input = input;
-                }
+                });
             }
         }
 
@@ -287,7 +258,7 @@ namespace Ai.MNIST.NeuralNetworks
         {
             double[] newNodeValues = new double[ NeuronAmmount ];
 
-            for( int newNodeindex = 0 ; newNodeindex < newNodeValues.Length ; newNodeindex++ )
+            Parallel.For( 0, NeuronAmmount, newNodeindex =>
             {
                 double newNodeValue = new double();
                 for( int oldNodeIndex = 0 ; oldNodeIndex < oldNodeValues.Length ; oldNodeIndex++ )
@@ -297,8 +268,7 @@ namespace Ai.MNIST.NeuralNetworks
                 }
                 newNodeValue *= ActivationFunction.SigmoidDx( StNeurons[ newNodeindex ].input );
                 newNodeValues[ newNodeindex ] = newNodeValue;
-            }
-
+            });
             return newNodeValues;
         }
 
@@ -312,7 +282,7 @@ namespace Ai.MNIST.NeuralNetworks
         {
             int NodesOutAmmount = 784;
 
-            for( int nodeOut = 0 ; nodeOut < nodeValues.Length ; nodeOut++ )
+            Parallel.For( 0, nodeValues.Length, nodeOut =>
             {
                 for( int nodeIn = 0 ; nodeIn < NodesOutAmmount ; nodeIn++ )
                 {
@@ -323,21 +293,26 @@ namespace Ai.MNIST.NeuralNetworks
                 }
                 double derrivativeCostBiases = 1 * nodeValues[ nodeOut ];
                 StNeurons[ nodeOut ].biasesGradient = derrivativeCostBiases;
-            }
+            });
         }
         public void UpdateGradient( double[] nodeValues )
         {
             int NodesOutAmmount = ParentNetwork.LiNetwork[ LayerLevel - 1 ];
-            for( int nodeOut = 0 ; nodeOut < nodeValues.Length ; nodeOut++ )
+            Parallel.For( 0, nodeValues.Length, nodeOut =>
             {
+                RefStNeuron prevLayerNeurons = ParentNetwork.GetNeuronsPrevLayer( LayerLevel ); 
                 for( int nodeIn = 0 ; nodeIn < NodesOutAmmount ; nodeIn++ )
                 {
-                    double NodeOutput = ParentNetwork.NetworkLayers[ LayerLevel - 1 ].StNeurons[ nodeIn ].output;
+                    double NodeOutput = prevLayerNeurons.Neurons[ nodeIn ].output;
                     double derrivativeCostWeight = NodeOutput * nodeValues[ nodeOut ];
                     WeightsGradient[ nodeIn, nodeOut ] += derrivativeCostWeight;
                 }
                 double derrivativeCostBiases = 1 * nodeValues[ nodeOut ];
                 StNeurons[ nodeOut ].biasesGradient = derrivativeCostBiases;
+            });
+            for( int nodeOut = 0 ; nodeOut < nodeValues.Length ; nodeOut++ )
+            {
+                
             }
         }
         #endregion
@@ -358,26 +333,26 @@ namespace Ai.MNIST.NeuralNetworks
             //{
             //    NeuronGoingIn = 784;
             //}
-            for( int nodeOut = 0 ; nodeOut < NeuronAmmount ; nodeOut++ )
+            Parallel.For( 0, NeuronAmmount, nodeOut =>
             {
                 StNeurons[ nodeOut ].biases -= StNeurons[ nodeOut ].biasesGradient * LearningRate;
                 for( int nodeIn = 0 ; nodeIn < NeuronGoingIn ; nodeIn++ )
                 {
                     WeightsPreviousLayer[ nodeIn, nodeOut ] -= WeightsGradient[ nodeIn, nodeOut ] * LearningRate;
-                } 
-            }
+                }
+            });
         }
         
         public void ResetGradients()
         {
-            for( int nodeOut = 0 ; nodeOut < WeightsGradient.GetLength( 1 ) ; nodeOut++ )
+            Parallel.For( 0, WeightsGradient.GetLength( 1 ), nodeOut =>
             {
                 for( int nodeIn = 0 ; nodeIn < WeightsGradient.GetLength( 0 ) ; nodeIn++ )
                 {
                     WeightsGradient[ nodeIn, nodeOut ] = 0;
                 }
                 StNeurons[ nodeOut ].biasesGradient = 0;
-            }
+            });
         }
 
         #endregion

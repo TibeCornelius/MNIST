@@ -431,7 +431,7 @@ namespace Ai.MNIST.NeuralNetworks
             Layer outputLayer = NetworkLayers[ NetworkLayers.Count - 1 ];
             foreach ( StNeuron neuron in NetworkLayers[ NetworkLayers.Count - 1 ].StNeurons )
             {
-                outputs[ index ] = outputLayer.StNeurons[0].input; 
+                outputs[ index ] = neuron.input; 
             }
             double[] ExcpectedOutput = CalculateCorrectOutputs( StImportedImage.label );
             double cost = 0;

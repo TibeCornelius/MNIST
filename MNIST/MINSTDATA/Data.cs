@@ -29,20 +29,21 @@ namespace Ai.MNIST.Data
 
         public byte[,] AddNoiseToImage( byte[,] image )
         {
-            for (int row = 0; row < image.GetLength( 0 ); row++)
+            Parallel.For( 0, image.GetLength( 0 ), row => 
             {
+                Random random = new();
                 for (int column = 0; column < image.GetLength( 1 ); column++)
                 {
                     if ( image[ row, column ] < 200)
                     {
-                        if ( myRandom.NextDouble() < 0.1)
+                        if ( random.NextDouble() < 0.1)
                         {
-                            int noise = myRandom.Next( 0, ( 256 - image[row, column] ) / 2 );
+                            int noise = random.Next( 0, ( 256 - image[row, column] ) / 2 );
                             image[ row, column ] = ( byte )Math.Min( 255, image[ row, column ] + noise );
                         }
                     }
                 }
-            }
+            });
             return image;
         }
 
