@@ -3,12 +3,12 @@ using Ai.MNIST.NeuralNetworks;
 
 namespace Ai.MNIST.Data
 {
-    public struct Data( List<byte[,]> TrainingImages, List<string> TrainingLabels, List<byte[,]> TestingImages, List<string> TestingLabels )
+    public struct Data( List<byte[,]> TrainingImages, List<int> TrainingLabels, List<byte[,]> TestingImages, List<int> TestingLabels )
     {
         private List<byte[,]> myTrainingImages =  TrainingImages;
-        private List<string> myTrainingLabes = TrainingLabels;
+        private List<int> myTrainingLabes = TrainingLabels;
         private List<byte[,]> myTestingImages = TestingImages;
-        private List<string> myTestingLabels = TestingLabels;
+        private List<int> myTestingLabels = TestingLabels;
         private Random myRandom = new Random();
 
         public Image GetSingleTrainingImage( bool AddNoise = false )
@@ -55,7 +55,7 @@ namespace Ai.MNIST.Data
                 Mode.Testing => myTestingImages,
                 _ => throw new Exception(),
             };
-            List<string> Labels = mode switch
+            List<int> Labels = mode switch
             {
                 Mode.Training => myTrainingLabes,
                 Mode.Testing => myTestingLabels,
@@ -63,7 +63,7 @@ namespace Ai.MNIST.Data
             };
             int ListLenght = Images.Count;
             List<byte[,]> ToImport = new List<byte[,]>();
-            List<string> stringToImport = new List<string>();
+            List<int> iToImport = new List<int>();
             for( int imageIndex = 0 ; imageIndex < Ammount ; imageIndex++ )
             {
                 int index = myRandom.Next( 0, ListLenght );
@@ -76,9 +76,9 @@ namespace Ai.MNIST.Data
                 {
                     ToImport.Add( Images[ index ] );
                 }
-                stringToImport.Add( Labels[ index ] );
+                iToImport.Add( Labels[ index ] );
             }
-            return new ToImportImages( Ammount, ToImport, stringToImport );
+            return new ToImportImages( Ammount, ToImport, iToImport );
         }
 
         

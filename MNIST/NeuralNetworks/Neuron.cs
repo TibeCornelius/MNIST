@@ -8,5 +8,14 @@ namespace Ai.MNIST.NeuralNetworks
         public double biasesGradient;
 
     }
+    public ref struct RefStNeuron
+    {
+        public ref StNeuron[] Neurons;
+        public RefStNeuron( ref StNeuron[] neurons )
+        {
+            this.Neurons = ref neurons;
+        }
+    }
+    
 
 }

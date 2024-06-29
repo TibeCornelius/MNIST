@@ -5,6 +5,7 @@ using System.IO;
 using System.Text.Json;
 using Ai.MNIST.NeuralNetworks.TrainingResults;
 using Ai.MNIST.Data;
+using System.Diagnostics;
 
 
 namespace Ai.MNIST.NeuralNetworks
@@ -33,19 +34,19 @@ namespace Ai.MNIST.NeuralNetworks
     public readonly struct Image
     {
         public readonly byte[,] ImageData;
-        public readonly string Label;
-        public Image( byte[,] ImageData, string Label )
+        public readonly int Label;
+        public Image( byte[,] ImageData, int Label )
         {
             this.ImageData = ImageData;
             this.Label = Label;
         }
 
     }
-    public class ToImportImages( int count, List<byte[,]> images, List<string> Labels )
+    public readonly struct ToImportImages( int count, List<byte[,]> images, List<int> Labels )
     {
-        public int Count = count;
-        public List<byte[,]> Images = images;
-        public List<string> Labels = Labels;
+        public readonly int Count = count;
+        public readonly List<byte[,]> Images = images;
+        public readonly List<int> Labels = Labels;
     }
     public class ImportSettings
     {
@@ -65,18 +66,18 @@ namespace Ai.MNIST.NeuralNetworks
         private Data.Data initializeDataSet()
         {
             List<byte[,]> bTrainingList = new List<byte[,]>();
-            List<string> sTrainingList = new List<string>();
+            List<int> sTrainingList = new List<int>();
             foreach( MNISTImage image in MNIST.Data.MNIST.ReadTrainingData() )
             {
                 bTrainingList.Add( image.Data );
-                sTrainingList.Add( Convert.ToString( image.Label ) );
+                sTrainingList.Add( Convert.ToInt16( image.Label ) );
             }
             List<byte[,]> bTestingList = new List<byte[,]>();
-            List<string> sTestingList = new List<string>();
+            List<int> sTestingList = new List<int>();
             foreach( MNISTImage image in MNIST.Data.MNIST.ReadTestData() )
             {
                 bTestingList.Add( image.Data );
-                sTestingList.Add( Convert.ToString( image.Label ) );
+                sTestingList.Add( Convert.ToInt16( image.Label ) );
             }
             return new Data.Data( bTrainingList, sTrainingList, bTestingList, sTestingList );
         }
@@ -135,6 +136,8 @@ namespace Ai.MNIST.NeuralNetworks
 
         public List<TrainingBatch> ImportSetOfImages( ImportSettings trainingImages, Mode mode, bool iwillDisplayResults, bool AddNoise = false )
         {
+            Stopwatch stopwatch = new();
+            stopwatch.Start();
             if( network == null )
             {
                 return new List<TrainingBatch>();
@@ -169,6 +172,8 @@ namespace Ai.MNIST.NeuralNetworks
                     }
                 }
             }
+            stopwatch.Stop();
+            Console.WriteLine($"Total elapsed time --> { stopwatch.Elapsed} ");
             return trainingResults;
         }
     }

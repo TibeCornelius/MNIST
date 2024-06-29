@@ -12,6 +12,7 @@ namespace Ai.MNIST.NeuralNetworks
         private Network ParentNetwork;
         int NeuronAmmount;
         private int LayerLevel;
+ 
         public Layer( Network _ParentNetwork, int _NeuronAmmount, int _LayerLevel )
         {
 
@@ -233,40 +234,30 @@ namespace Ai.MNIST.NeuralNetworks
         {
             if( LayerLevel != 0 )
             {
+                RefStNeuron prevLayerNeurons = ParentNetwork.GetNeuronsPrevLayer( LayerLevel );
                 for( int indexNeuron = 0 ; indexNeuron < StNeurons.Length ; indexNeuron++ )
                 {
-                    StNeurons[ indexNeuron ].input = InputSingleNeuron( indexNeuron, StNeurons[ indexNeuron ] );
+                    double input = StNeurons[ indexNeuron ].biases;
+                    for( int index = 0 ; index < ParentNetwork.NetworkLayers[ LayerLevel - 1 ].StNeurons.Length ; index++ )
+                    {
+                        input += prevLayerNeurons.Neurons[ index ].output * WeightsPreviousLayer[ index, indexNeuron ];
+                    }
+                    StNeurons[ indexNeuron ].input = input;
                 }
             }
             else
             {
                 for( int indexNeuron = 0 ; indexNeuron < StNeurons.Length ; indexNeuron++ )
                 {
-                    StNeurons[ indexNeuron ].input = FirstInputSingleNeuron( indexNeuron, StNeurons[ indexNeuron ], StImportedImage );
+                    double input = StNeurons[ indexNeuron ].biases;
+            
+                    for( int index = 0 ; index < 784 ; index++ )
+                    {
+                        input += StImportedImage.output[ index ] * WeightsPreviousLayer[ index, indexNeuron ];
+                    }
+                    StNeurons[ indexNeuron ].input = input;
                 }
             }
-        }
-
-        private double InputSingleNeuron( int indexNeuron, StNeuron stNeuron )
-        {
-            double input = StNeurons[ indexNeuron ].biases;
-
-            for( int index = 0 ; index < ParentNetwork.NetworkLayers[ LayerLevel - 1 ].StNeurons.Length ; index++ )
-            {
-                input += ParentNetwork.NetworkLayers[ LayerLevel - 1 ].StNeurons[ index ].output * WeightsPreviousLayer[ index, indexNeuron ];
-            }
-            return input;
-        }
-
-        private double FirstInputSingleNeuron( int indexNeuron, StNeuron stNeuron, ImportedImage StImportedImage )
-        {
-            double input = StNeurons[ indexNeuron ].biases;
-            
-            for( int index = 0 ; index < 784 ; index++ )
-            {
-                input += StImportedImage.output[ index ] * WeightsPreviousLayer[ index, indexNeuron ];
-            }
-            return input;
         }
 
         public void CalculateOutputs()
@@ -288,7 +279,7 @@ namespace Ai.MNIST.NeuralNetworks
             {
                 double CostDerrivative = NodeCostDerrivative( StNeurons[ index ].output, excpectedOutputs[ index ]);
                 double activationDerrivative = ActivationFunction.SigmoidDx( StNeurons[ index ].input );
-                nodeValues[ index ] = activationDerrivative * CostDerrivative; 
+                nodeValues[ index ] = activationDerrivative * CostDerrivative;
             }
             return nodeValues;
         }

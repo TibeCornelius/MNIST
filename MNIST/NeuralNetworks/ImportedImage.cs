@@ -4,7 +4,7 @@ namespace Ai.MNIST.NeuralNetworks
     {
         public double[] nodeValuesFinalLayer;
         public byte[,] image;
-        public string label;
+        public int label;
         public byte[,] input;
         public double[] output;
         public double cost;

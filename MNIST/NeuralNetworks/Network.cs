@@ -112,6 +112,11 @@ namespace Ai.MNIST.NeuralNetworks
         }
 
 #endregion
+
+        public RefStNeuron GetNeuronsPrevLayer( int Layer )
+        {
+            return new RefStNeuron( ref NetworkLayers[ Layer - 1 ].StNeurons );
+        }
         public double[] ByteInput( byte[,] image )
         {
             double[] output = new double[ 28 * 28 ];
@@ -137,11 +142,11 @@ namespace Ai.MNIST.NeuralNetworks
             int CorrectGuesses = 0;
             TrainingBatch myTraningResults = new TrainingBatch( TrainingSession );
             List<byte[,]> allImages = ImportedImages.Images;
-            List<string> allLabels = ImportedImages.Labels;
+            List<int> allLabels = ImportedImages.Labels;
             for( int imageIndex = 0 ; imageIndex < allImages.Count ; imageIndex++ )
             {
                 byte[,] ImageByte = allImages[ imageIndex ];
-                string imageLabel = allLabels[ imageIndex ];
+                int imageLabel = allLabels[ imageIndex ];
                 ImportedImage StImportedImage = new ImportedImage
                 {
                     image = ImageByte,
@@ -189,15 +194,15 @@ namespace Ai.MNIST.NeuralNetworks
             int CorrectGuesses = 0;
             TrainingBatch myTraningResults = new TrainingBatch( TrainingSession );
             List<byte[,]> images = ImportedImages.Images;
-            List<string> labels = ImportedImages.Labels;
+            List<int> labels = ImportedImages.Labels;
             for( int imageIndex = 0 ; imageIndex < ImportedImages.Count ; imageIndex++ )
             {
                 ImportedImage StImportedImage = new ImportedImage
                 {
                     image = images[imageIndex],
                     input = images[imageIndex],
-                    output = ByteInput(images[imageIndex]),
-                    excpectedOutput = CalculateCorrectOutputs(labels[imageIndex]),
+                    output = ByteInput( images[imageIndex] ),
+                    excpectedOutput = CalculateCorrectOutputs( labels[imageIndex] ),
                     label = labels[imageIndex]
                 };
                 int CorrectOutput = Convert.ToInt16(StImportedImage.label);
@@ -237,15 +242,15 @@ namespace Ai.MNIST.NeuralNetworks
             int CorrectGuesses = 0;
             TrainingBatch myResults = new TrainingBatch( TrainingSession );
             List<byte[,]> images = ImportedImages.Images;
-            List<string> labels = ImportedImages.Labels;
+            List<int> labels = ImportedImages.Labels;
             for( int imageIndex = 0 ; imageIndex < ImportedImages.Count ; imageIndex++ )
             {
                 ImportedImage StImportedImage = new ImportedImage
                 {
                     image = images[imageIndex],
                     input = images[imageIndex],
-                    output = ByteInput(images[imageIndex]),
-                    excpectedOutput = CalculateCorrectOutputs(labels[imageIndex]),
+                    output = ByteInput( images[imageIndex] ),
+                    excpectedOutput = CalculateCorrectOutputs( labels[imageIndex] ),
                     label = labels[imageIndex]
                 };
                 int CorrectGues = Convert.ToInt16( StImportedImage.label );
@@ -278,7 +283,7 @@ namespace Ai.MNIST.NeuralNetworks
             List<ImportedImage> LiStImportedImages = new List<ImportedImage>();
             int CorrectGuesses = 0;
             List<byte[,]> images = ImportedImages.Images;
-            List<string> labels = ImportedImages.Labels;
+            List<int> labels = ImportedImages.Labels;
             TrainingBatch myResults = new TrainingBatch( TrainingSession );
             for( int imageIndex = 0 ; imageIndex < ImportedImages.Count ; imageIndex++ )
             {
@@ -286,8 +291,8 @@ namespace Ai.MNIST.NeuralNetworks
                 {
                     image = images[imageIndex],
                     input = images[imageIndex],
-                    output = ByteInput(images[imageIndex]),
-                    excpectedOutput = CalculateCorrectOutputs(labels[imageIndex]),
+                    output = ByteInput( images[imageIndex] ),
+                    excpectedOutput = CalculateCorrectOutputs( labels[imageIndex] ),
                     label = labels[imageIndex]
                 };
                 int CorrectGues = Convert.ToInt16( StImportedImage.label );
@@ -389,12 +394,12 @@ namespace Ai.MNIST.NeuralNetworks
             return iOutput;
         }
 
-        public double[] CalculateCorrectOutputs( string label )
+        public double[] CalculateCorrectOutputs( int label )
         {
             double[] output = new double[10];
             for( int index = 0 ; index < 10 ; index++ )
             {
-                output[ index ] = ( index == Convert.ToInt16( label ) ) ? 1 : 0 ;
+                output[ index ] = ( index == label ) ? 1 : 0 ;
             }
 
             return output;
