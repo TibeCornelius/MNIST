@@ -47,12 +47,6 @@ namespace Ai.MNIST.NeuralNetworks
                 this.WeightsGradient = new double[ _ParentNetwork.LiNetwork[ _LayerLevel - 1 ], _NeuronAmmount ];
             }
         }
-
-        
-
-
-
-
         #region Json
         public double[] GetBiasesToArray()
         {
@@ -65,59 +59,7 @@ namespace Ai.MNIST.NeuralNetworks
             }
             return biases;
         }
-        public void CreateJson( string outputlocation )
-        {
-            CreateWheigtsJson( outputlocation );
-            CreateBiasesJson( outputlocation );
-            CreateNeuronCountJson( outputlocation );
-        }
 
-        private void CreateNeuronCountJson(string outputlocation)
-        {
-            string NeuronCountJson = JsonSerializer.Serialize( NeuronAmmount );
-            string WheightsDestination = ".\\SavedSettings\\" + outputlocation + "\\Layer" + ( LayerLevel + 1 ) + "NeuronCount.json";
-            File.WriteAllText( WheightsDestination, NeuronCountJson );
-        }
-
-        private void CreateWheigtsJson( string outputlocation )
-        {
-            double[][] JaggedWheigtArray = ConvertToJaggedArray( WeightsPreviousLayer );
-            string JsonWheights = JsonSerializer.Serialize( JaggedWheigtArray );
-            string WheightsDestination = ".\\SavedSettings\\" + outputlocation + "\\Layer" + ( LayerLevel + 1 ) + "Wheights.json";
-            File.WriteAllText( WheightsDestination, JsonWheights );
-        }
-
-        private void CreateBiasesJson( string outputlocation )
-        {
-            double[] Biases = new double[ NeuronAmmount ];
-            int index = 0;
-            foreach ( StNeuron neuron in StNeurons )
-            {
-                Biases[ index ] = neuron.biases;
-                index++;
-            }
-            string JsonBiases = JsonSerializer.Serialize( Biases );
-            string BiasesDestination = ".\\SavedSettings\\" + outputlocation + "\\Layer" + ( LayerLevel + 1 ) + "Biases.json";
-            File.WriteAllText( BiasesDestination, JsonBiases );
-        }
-
-        private double[][] ConvertToJaggedArray( double[,] Array2D )
-        {
-            int rows = Array2D.GetLength(0);
-            int cols = Array2D.GetLength(1);
-            double[][] jaggedArray = new double[rows][];
-
-            for (int i = 0; i < rows; i++)
-            {
-                jaggedArray[i] = new double[cols];
-                for (int j = 0; j < cols; j++)
-                {
-                    jaggedArray[i][j] = Array2D[i, j];
-                }
-            }
-
-            return jaggedArray;
-        }
         #endregion
         #region Initialization
 
@@ -134,24 +76,6 @@ namespace Ai.MNIST.NeuralNetworks
             }
 
             return NeuronArray;
-        }
-        
-        private double[,] ReConvertJaggedArray( double[][] aaWheights )
-        {
-            int rowCount = aaWheights.Length;
-            int colCount = aaWheights.Max(innerArray => innerArray.Length);
-
-            double[,] Wheigts = new double[ rowCount, colCount ];
-
-            for( int row = 0 ; row < rowCount ; row++ )
-            {
-                for( int column = 0 ; column < colCount ; column++ )
-                {
-                    Wheigts[ row, column ] = aaWheights[ row ][ column ];
-                }
-            }
-
-            return Wheigts;
         }
         private StNeuron[] initialize_Neurons( int NeuronAmmount )
         {
@@ -245,7 +169,7 @@ namespace Ai.MNIST.NeuralNetworks
         public double[] NodeValuesFinalLayer( double[] excpectedOutputs )
         {//Calculates the partial derrivative of the activation in respect to the output final layer only
             double[] nodeValues = new double[ excpectedOutputs.Length ];
-
+            
             for( int index = 0 ; index < nodeValues.Length ; index++ )
             {
                 double CostDerrivative = NodeCostDerrivative( StNeurons[ index ].output, excpectedOutputs[ index ]);
@@ -325,14 +249,6 @@ namespace Ai.MNIST.NeuralNetworks
             {
                 NeuronGoingIn = ParentNetwork.LiNetwork[ LayerLevel - 1 ];
             }
-            //try 
-            //{
-            //    NeuronGoingIn = ParentNetwork.LiNetwork[ LayerLevel - 1 ];
-            //}
-            //catch
-            //{
-            //    NeuronGoingIn = 784;
-            //}
             Parallel.For( 0, NeuronAmmount, nodeOut =>
             {
                 StNeurons[ nodeOut ].biases -= StNeurons[ nodeOut ].biasesGradient * LearningRate;
@@ -345,14 +261,7 @@ namespace Ai.MNIST.NeuralNetworks
         
         public void ResetGradients()
         {
-            Parallel.For( 0, WeightsGradient.GetLength( 1 ), nodeOut =>
-            {
-                for( int nodeIn = 0 ; nodeIn < WeightsGradient.GetLength( 0 ) ; nodeIn++ )
-                {
-                    WeightsGradient[ nodeIn, nodeOut ] = 0;
-                }
-                StNeurons[ nodeOut ].biasesGradient = 0;
-            });
+            WeightsGradient = new double[ WeightsGradient.GetLength( 0 ), WeightsGradient.GetLength( 1 ) ];
         }
 
         #endregion
