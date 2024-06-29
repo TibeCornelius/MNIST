@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 using Ai.MNIST.NeuralNetworks.TrainingResults;
 using Ai.MNIST.Util;
@@ -130,20 +131,24 @@ namespace Ai.MNIST.NeuralNetworks
         }
         public TrainingBatch Train( ToImportImages ImportedImages, int TrainingSession )
         {
+            Stopwatch stopWatch = new();
+            stopWatch.Start();
             List<ImportedImage> LiStImportedImages = new List<ImportedImage>();
             int CorrectGuesses = 0;
             TrainingBatch myTraningResults = new TrainingBatch( TrainingSession );
-            List<byte[,]> images = ImportedImages.Images;
-            List<string> labels = ImportedImages.Labels;
-            for( int imageIndex = 0 ; imageIndex < images.Count ; imageIndex++ )
+            List<byte[,]> allImages = ImportedImages.Images;
+            List<string> allLabels = ImportedImages.Labels;
+            for( int imageIndex = 0 ; imageIndex < allImages.Count ; imageIndex++ )
             {
+                byte[,] ImageByte = allImages[ imageIndex ];
+                string imageLabel = allLabels[ imageIndex ];
                 ImportedImage StImportedImage = new ImportedImage
                 {
-                    image = images[imageIndex],
-                    input = images[imageIndex],
-                    output = ByteInput(images[imageIndex]),
-                    excpectedOutput = CalculateCorrectOutputs(labels[imageIndex]),
-                    label = labels[imageIndex]
+                    image = ImageByte,
+                    input = ImageByte,
+                    output = ByteInput( ImageByte ),
+                    excpectedOutput = CalculateCorrectOutputs( imageLabel ),
+                    label = imageLabel
                 };
                 int CorrectOutput = Convert.ToInt16(StImportedImage.label);
                 foreach ( Layer layer in NetworkLayers )
@@ -159,9 +164,8 @@ namespace Ai.MNIST.NeuralNetworks
                 }
 
                 Gradients( StImportedImage );
-
                 LiStImportedImages.Add( StImportedImage );
-                myTraningResults.ImageData.Add( new ImageData( CorrectOutput, StImportedImage.cost, iGuessed, images[ imageIndex ], NetworkLayers[ NetworkLayers.Count - 1 ].StNeurons ) );
+                myTraningResults.ImageData.Add( new ImageData( CorrectOutput, StImportedImage.cost, iGuessed, ImageByte, NetworkLayers[ NetworkLayers.Count - 1 ].StNeurons ) );
             }
             double TotalAverageCost = TotalCost( LiStImportedImages );
             double LearningRate = 0.001;
@@ -170,10 +174,13 @@ namespace Ai.MNIST.NeuralNetworks
             myTraningResults.CorrectGuesses = CorrectGuesses;
             myTraningResults.TotalAverageCost = TotalAverageCost;
             OurResultsContainer.OurTrainingResults.Add( myTraningResults );
+            stopWatch.Stop();
+            Console.WriteLine( stopWatch.Elapsed ); 
             return myTraningResults;
         }
         public TrainingBatch Train( ToImportImages ImportedImages, int TrainingSession , bool iwillDisplayResults )
         {
+            
             if( displayResults is null || displayBatchResults is null )
             {
                 throw new Exception();
