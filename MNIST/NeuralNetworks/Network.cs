@@ -14,7 +14,7 @@ namespace Ai.MNIST.NeuralNetworks
         public DisplayImageResults? displayResults{ get; set; }
         public delegate void DisplayBatchResults( TrainingBatch trainingBatch );
         public DisplayBatchResults? displayBatchResults{ get; set; }
-        public Network( List<int> Network )
+        public Network( List<int> Network, ActivationFunctionOptions activationFunctionOptions )
         {
             this.LiNetwork = Network; 
             this.NetworkLayers = new List<Layer>();
@@ -23,7 +23,7 @@ namespace Ai.MNIST.NeuralNetworks
             int index = 0 ; 
             foreach( int layer in Network )
             {
-                NetworkLayers.Add( initialize_Layers( Network, index ) );
+                NetworkLayers.Add( initialize_Layers( Network, index, activationFunctionOptions ) );
                 index++;
             }
         }
@@ -93,9 +93,10 @@ namespace Ai.MNIST.NeuralNetworks
 
 #endregion
 #region initialization
-        private Layer initialize_Layers( List<int> Network, int index )
+        private Layer initialize_Layers( List<int> Network, int index,ActivationFunctionOptions activationFunctionOptions )
         {
-            Layer layer = new Layer( this, Network[ index ], index );
+            bool LastLayer = index == LiNetwork.Count - 1 ? true : false;
+            Layer layer = new Layer( this, Network[ index ], index, LastLayer, activationFunctionOptions );
             return layer;
         }
 
@@ -105,7 +106,8 @@ namespace Ai.MNIST.NeuralNetworks
             int index = 0; 
             foreach( int NeuronCount in LiNetwork )
             {
-                Layer layer = new( this, Converter.JaggedToArray2D( JsonSettings.Weights[ index ] ), JsonSettings.Biases[ index ], index, JsonSettings.NeuronCount[ index ] );
+                bool LastLayer = index == LiNetwork.Count - 1 ? true : false;
+                Layer layer = new( this, Converter.JaggedToArray2D( JsonSettings.Weights[ index ] ), JsonSettings.Biases[ index ], index, JsonSettings.NeuronCount[ index ], LastLayer, ActivationFunctionOptions.Sigmoid );
                 NetworkLayers.Add( layer );
                 index++;
             }

@@ -2,6 +2,11 @@ using System.Text.Json;
 
 namespace Ai.MNIST.NeuralNetworks
 {
+    public enum ActivationFunctionOptions
+    {
+        Sigmoid,
+        ReLU,
+    }
 
     public sealed class Layer
     {
@@ -12,12 +17,28 @@ namespace Ai.MNIST.NeuralNetworks
         private Network ParentNetwork;
         int NeuronAmmount;
         private int LayerLevel;
+        private bool iamFinalLayer;
+        public delegate double ActivationFunction( double intput );
+        private readonly ActivationFunction myActivationFunction;
+        private readonly ActivationFunction myActivationFunctionDx;
  
-        public Layer( Network _ParentNetwork, int _NeuronAmmount, int _LayerLevel )
+        public Layer( Network _ParentNetwork, int _NeuronAmmount, int _LayerLevel, bool iamFinalLayer, ActivationFunctionOptions activationFunction )
         {
-
-            this.StNeurons = initialize_Neurons( _NeuronAmmount );
-            this.WeightsPreviousLayer = initialize_Weights( _ParentNetwork, LayerLevel, _NeuronAmmount );            
+            switch( activationFunction )
+            {
+                case ActivationFunctionOptions.Sigmoid:
+                    this.myActivationFunction = ActivationFunctions.Sigmoid;
+                    this.myActivationFunctionDx = ActivationFunctions.SigmoidDx;
+                    break;
+                case ActivationFunctionOptions.ReLU:
+                    this.myActivationFunction = ActivationFunctions.ReLU;
+                    this.myActivationFunctionDx = ActivationFunctions.ReLUDx;
+                    break;
+                default : 
+                    throw new ArgumentOutOfRangeException();
+            }
+            this.StNeurons = initialize_Neurons( _NeuronAmmount, activationFunction );
+            this.WeightsPreviousLayer = initialize_Weights( _ParentNetwork, LayerLevel, _NeuronAmmount, activationFunction );           
             
             if( _LayerLevel == 0 )
             {
@@ -32,12 +53,25 @@ namespace Ai.MNIST.NeuralNetworks
             this.LayerLevel = _LayerLevel;
         }
 
-        public Layer( Network _ParentNetwork, double[,] Wheigts, double[] Biases, int _LayerLevel, int _NeuronAmmount )
+        public Layer( Network _ParentNetwork, double[,] Wheigts, double[] Biases, int _LayerLevel, int _NeuronAmmount, bool iamFinalLayer, ActivationFunctionOptions activationFunction )
         {//Gets executed when loading network from json file
             this.ParentNetwork = _ParentNetwork;
             this.LayerLevel = _LayerLevel;
             this.StNeurons = initialize_NeuronsJson( Biases );
             this.WeightsPreviousLayer = Wheigts;
+            switch( activationFunction )
+            {
+                case ActivationFunctionOptions.Sigmoid:
+                    this.myActivationFunction = ActivationFunctions.Sigmoid;
+                    this.myActivationFunctionDx = ActivationFunctions.SigmoidDx;
+                    break;
+                case ActivationFunctionOptions.ReLU:
+                    this.myActivationFunction = ActivationFunctions.ReLU;
+                    this.myActivationFunctionDx = ActivationFunctions.ReLUDx;
+                    break;
+                default : 
+                    throw new ArgumentOutOfRangeException();
+            }
             if( _LayerLevel == 0 )
             {
                 this.WeightsGradient = new double[ 784, _NeuronAmmount ];
@@ -77,13 +111,24 @@ namespace Ai.MNIST.NeuralNetworks
 
             return NeuronArray;
         }
-        private StNeuron[] initialize_Neurons( int NeuronAmmount )
+        private StNeuron[] initialize_Neurons( int NeuronAmmount, ActivationFunctionOptions activationType )
         {
             StNeuron[] NeuronArray = new StNeuron[NeuronAmmount];
             Random random = new Random();
             for( int index = 0 ; index < NeuronAmmount ; index++ )
             {
-                double Rbiases = random.NextDouble() * 2 - 1 ;
+                double Rbiases = 0;
+                switch( activationType )
+                {
+                    case ActivationFunctionOptions.Sigmoid:
+                        Rbiases = random.NextDouble() * 2 - 1 ;
+                        break;
+                    case ActivationFunctionOptions.ReLU:
+                        Rbiases = 0.01;;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
                 NeuronArray[ index ] = new StNeuron{
                     biases = Rbiases,
                 };
@@ -92,34 +137,36 @@ namespace Ai.MNIST.NeuralNetworks
             return NeuronArray;
         }
 
-        private double[,] initialize_Weights( Network ParentNetwork, int LayerLevel, int NeuronAmmount )
+        private double[,] initialize_Weights( Network ParentNetwork, int LayerLevel, int NeuronAmmount, ActivationFunctionOptions activationType )
         {
-            if( LayerLevel != 0 )
+            int inputSize = LayerLevel != 0 ? ParentNetwork.NetworkLayers[ LayerLevel - 1 ].NeuronAmmount : 28 * 28;
+            double stddev = Math.Sqrt(2.0 / inputSize);
+            double[,] weights = new double[ inputSize, NeuronAmmount ];
+            Random RandomNumber = new Random();
+
+            switch( activationType )
             {
-                double[,] weights = new double[ ParentNetwork.NetworkLayers[ LayerLevel - 1 ].NeuronAmmount, NeuronAmmount ];
-                Random RandomNumber = new Random();
-                for( int indexPreviousLayer = 0 ; indexPreviousLayer < ParentNetwork.LiNetwork[ LayerLevel - 1 ] ; indexPreviousLayer++ )
-                {
-                    for( int indexThisLayer = 0 ; indexThisLayer < NeuronAmmount ; indexThisLayer++ )
+                case ActivationFunctionOptions.ReLU:
+                    for ( int indexPreviousLayer = 0; indexPreviousLayer < inputSize; indexPreviousLayer++ )
                     {
-                        weights[ indexPreviousLayer, indexThisLayer ] = RandomNumber.NextDouble() - 0.5;
+                        for (int indexThisLayer = 0; indexThisLayer < NeuronAmmount; indexThisLayer++ )
+                        {
+                            weights[ indexPreviousLayer, indexThisLayer ] = RandomNumber.NextGaussian( 0, stddev );
+                        }
                     }
-                }
-                return weights; 
-            }
-            else
-            {                    
-                double[,] weights = new double[ 28 * 28, NeuronAmmount ];
-                Random RandomNumber = new Random();
-                for( int indexPreviousLayer = 0 ; indexPreviousLayer < 28 * 28; indexPreviousLayer++ )
-                {
-                    for( int indexThisLayer = 0 ; indexThisLayer < NeuronAmmount ; indexThisLayer++ )
+                    return weights;
+                case ActivationFunctionOptions.Sigmoid:
+                    for( int indexPreviousLayer = 0 ; indexPreviousLayer < inputSize ; indexPreviousLayer++ )
                     {
-                        weights[ indexPreviousLayer, indexThisLayer ] = RandomNumber.NextDouble() - 0.5;
+                        for( int indexThisLayer = 0 ; indexThisLayer < NeuronAmmount ; indexThisLayer++ )
+                        {
+                            weights[ indexPreviousLayer, indexThisLayer ] = RandomNumber.NextDouble() - 0.5;
+                        }
                     }
-                }
-                return weights; 
-            }
+                    return weights;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }   
         }
 
         #endregion
@@ -159,7 +206,7 @@ namespace Ai.MNIST.NeuralNetworks
         {
             for( int indexNeuron = 0 ; indexNeuron < StNeurons.Length ; indexNeuron++ )
             {
-                StNeurons[ indexNeuron ].output = ActivationFunction.Sigmoid( StNeurons[ indexNeuron ].input );
+                StNeurons[ indexNeuron ].output = myActivationFunction( StNeurons[ indexNeuron ].input );
             }
         }
         
@@ -173,7 +220,7 @@ namespace Ai.MNIST.NeuralNetworks
             for( int index = 0 ; index < nodeValues.Length ; index++ )
             {
                 double CostDerrivative = NodeCostDerrivative( StNeurons[ index ].output, excpectedOutputs[ index ]);
-                double activationDerrivative = ActivationFunction.SigmoidDx( StNeurons[ index ].input );
+                double activationDerrivative = myActivationFunctionDx( StNeurons[ index ].input );
                 nodeValues[ index ] = activationDerrivative * CostDerrivative;
             }
             return nodeValues;
@@ -190,7 +237,7 @@ namespace Ai.MNIST.NeuralNetworks
                     double WeightedInput = oldLayer.WeightsPreviousLayer[ newNodeindex, oldNodeIndex ];
                     newNodeValue += WeightedInput * oldNodeValues[ oldNodeIndex ]; 
                 }
-                newNodeValue *= ActivationFunction.SigmoidDx( StNeurons[ newNodeindex ].input );
+                newNodeValue *= myActivationFunctionDx( StNeurons[ newNodeindex ].input );
                 newNodeValues[ newNodeindex ] = newNodeValue;
             });
             return newNodeValues;

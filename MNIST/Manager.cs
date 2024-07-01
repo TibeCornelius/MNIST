@@ -14,6 +14,7 @@ namespace Ai.MNIST.NeuralNetworks
     {
         public int LayerCount;
         public int[] NeuronCount;
+        public ActivationFunctionOptions ActivationFunction;
         
         public NetworkValues()
         {
@@ -24,11 +25,13 @@ namespace Ai.MNIST.NeuralNetworks
         {
             this.LayerCount = 3;
             this.NeuronCount = new int[3]{ 400, 150, 10 };
+            this.ActivationFunction = ActivationFunctionOptions.Sigmoid;
         }
-        public void SetCustom( int LayerCount, int[] NeuronCount )
+        public void SetCustom( int LayerCount, int[] NeuronCount,ActivationFunctionOptions activationFunctionOptions )
         {
             this.LayerCount = LayerCount;
             this.NeuronCount = NeuronCount;
+            this.ActivationFunction = activationFunctionOptions;
         }
     }
     public readonly struct Image
@@ -56,6 +59,7 @@ namespace Ai.MNIST.NeuralNetworks
     public class Manager
     {
         public Network? network;
+        public Network[]? NumberVerifyerNetworks;
         Data.Data myDataSet;
         public delegate void DisplayResults( ImageData image );
         public Manager()
@@ -98,7 +102,6 @@ namespace Ai.MNIST.NeuralNetworks
             }
             return network.ImportSingleImage( image );
         }
-
         public void StartNewNetwork( NetworkValues networkValues )
         {
             List<int> Neurons = new List<int>();
@@ -106,7 +109,7 @@ namespace Ai.MNIST.NeuralNetworks
             {
                 Neurons.Add( NeuronCount );
             }
-            network = new Network( Neurons );
+            network = new Network( Neurons, networkValues.ActivationFunction );
         }
 
         public void LoadInNetworkFromJson( NetworkJsonFormat JsonSettings )
@@ -132,8 +135,6 @@ namespace Ai.MNIST.NeuralNetworks
             }
             network.SerializeStatsToJson( OutputLocation, DefaultLocation );
         }
-
-
         public List<TrainingBatch> ImportSetOfImages( ImportSettings trainingImages, Mode mode, bool iwillDisplayResults, bool AddNoise = false )
         {
             Stopwatch stopwatch = new();

@@ -76,6 +76,7 @@ namespace Ai.MNIST.Terminal
             NetworkValues settings = new();
             if( !StandartNetwork )
             {
+                Console.WriteLine("Will this be a number verifyers or recognizer");
                 Console.WriteLine("Chose the Ammount of hidden Layers");
                 bool inValidAmmount = true;
                 while ( inValidAmmount )
@@ -98,7 +99,39 @@ namespace Ai.MNIST.Terminal
                     Neurons.Add( AmmountofNeurons );
                 }
                 Neurons.Add( 10 );
-                settings.SetCustom( AmmountOfLayers + 1, Neurons.ToArray() );
+                Console.WriteLine("Choose activation funtion \n 1 --> Sigmoid \n 2 --> Relu");
+                bool inValidChoice = true;
+                ActivationFunctionOptions activationChoice = ActivationFunctionOptions.ReLU;
+                while( inValidChoice )
+                {
+                    int Choice = 0;
+                    try
+                    {
+                        Choice = Convert.ToInt16( Console.ReadLine() );
+                    }
+                    catch
+                    {
+                        Console.WriteLine("Please enter a number");
+                    }
+                    if( Choice == 1 || Choice == 2 )
+                    {
+                        inValidChoice = false;
+                        switch( Choice )
+                        {
+                            case 1: 
+                                activationChoice = ActivationFunctionOptions.Sigmoid;
+                                break;
+                            case 2:
+                                activationChoice = ActivationFunctionOptions.ReLU;
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("Please enter a valid ammount");
+                    }
+                }
+                settings.SetCustom( AmmountOfLayers + 1, Neurons.ToArray(), activationChoice );
             }
             else
             {
