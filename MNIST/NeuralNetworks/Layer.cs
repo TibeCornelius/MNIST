@@ -17,12 +17,11 @@ namespace Ai.MNIST.NeuralNetworks
         private Network ParentNetwork;
         int NeuronAmmount;
         private int LayerLevel;
-        private bool iamFinalLayer;
         public delegate double ActivationFunction( double intput );
         private readonly ActivationFunction myActivationFunction;
         private readonly ActivationFunction myActivationFunctionDx;
  
-        public Layer( Network _ParentNetwork, int _NeuronAmmount, int _LayerLevel, bool iamFinalLayer, ActivationFunctionOptions activationFunction )
+        public Layer( Network _ParentNetwork, int _NeuronAmmount, int _LayerLevel, ActivationFunctionOptions activationFunction )
         {
             switch( activationFunction )
             {

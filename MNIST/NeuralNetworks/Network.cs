@@ -14,11 +14,20 @@ namespace Ai.MNIST.NeuralNetworks
         public DisplayImageResults? displayResults{ get; set; }
         public delegate void DisplayBatchResults( TrainingBatch trainingBatch );
         public DisplayBatchResults? displayBatchResults{ get; set; }
-        public Network( List<int> Network, ActivationFunctionOptions activationFunctionOptions )
+        private ActivationFunctionOptions myActivationFunction;
+        private bool iamImageRecognizer;
+        private int myNumberToRecognize;
+        private int myOutputNeurons;
+        private Manager myManager;
+        public Network( List<int> Network, ActivationFunctionOptions activationFunctionOptions, bool iamImageRecognizer, int myNumberToRecognize, Manager manager )
         {
             this.LiNetwork = Network; 
             this.NetworkLayers = new List<Layer>();
             this.OurResultsContainer = new Container();
+            this.iamImageRecognizer = iamImageRecognizer;
+            this.myNumberToRecognize = myNumberToRecognize;
+            this.myOutputNeurons = iamImageRecognizer ? 10 : 2;
+            this.myManager = manager;
 
             int index = 0 ; 
             foreach( int layer in Network )
@@ -27,12 +36,18 @@ namespace Ai.MNIST.NeuralNetworks
                 index++;
             }
         }
-        public Network( NetworkJsonFormat JsonSettings )
+        public Network( NetworkJsonFormat JsonSettings, Manager manager )
         {
             this.LiNetwork = new List<int>();
             this.NetworkLayers = new List<Layer>();
             this.OurResultsContainer = new Container();
+            this.myManager = manager;
             initializeFromJson( JsonSettings );
+            if( JsonSettings.iamImageRecognizer == false )
+            {
+                this.myNumberToRecognize = JsonSettings.myImageToRecognize;
+            }
+            this.iamImageRecognizer = JsonSettings.iamImageRecognizer;
         }
 #region TrainingStats
         public void LoadInStatsFromJson()
@@ -58,7 +73,8 @@ namespace Ai.MNIST.NeuralNetworks
         }
         public string CreateJson( string OuputLocation, bool DefaultLocation )
         {
-            NetworkJsonFormat jsonClass = new( NetworkLayers.Count, LiNetwork.ToArray(), GetAllWheights(), GetAllBiases() );
+            int imageToRecognize = iamImageRecognizer ? 0 : myNumberToRecognize;
+            NetworkJsonFormat jsonClass = new( NetworkLayers.Count, LiNetwork.ToArray(), GetAllWheights(), GetAllBiases(), myActivationFunction, iamImageRecognizer,imageToRecognize );
             string NetworkJson = JsonSerializer.Serialize( jsonClass );
             if( DefaultLocation )
             {
@@ -90,16 +106,13 @@ namespace Ai.MNIST.NeuralNetworks
             }
             return AllWheights;
         }
-
 #endregion
 #region initialization
         private Layer initialize_Layers( List<int> Network, int index,ActivationFunctionOptions activationFunctionOptions )
         {
-            bool LastLayer = index == LiNetwork.Count - 1 ? true : false;
-            Layer layer = new Layer( this, Network[ index ], index, LastLayer, activationFunctionOptions );
+            Layer layer = new Layer( this, Network[ index ], index, activationFunctionOptions );
             return layer;
         }
-
         private void initializeFromJson( NetworkJsonFormat JsonSettings )
         {
             LiNetwork = JsonSettings.NeuronCount.ToList();
@@ -114,7 +127,6 @@ namespace Ai.MNIST.NeuralNetworks
         }
 
 #endregion
-
         public RefStNeuron GetNeuronsPrevLayer( int Layer )
         {
             return new RefStNeuron( ref NetworkLayers[ Layer - 1 ].StNeurons );
@@ -165,9 +177,19 @@ namespace Ai.MNIST.NeuralNetworks
                 }
                 StImportedImage.cost = Cost( StImportedImage );
                 int iGuessed = GetHighestOutput( StImportedImage );
-                if( iGuessed == CorrectOutput )
+                if( iamImageRecognizer )
+                {  
+                    if( iGuessed == CorrectOutput )
+                    {
+                        CorrectGuesses++;
+                    }
+                }
+                else
                 {
-                    CorrectGuesses++;
+                    if( imageLabel == myNumberToRecognize && iGuessed == 1 )
+                    {
+                        CorrectGuesses++;
+                    }
                 }
 
                 Gradients( StImportedImage );
@@ -186,8 +208,7 @@ namespace Ai.MNIST.NeuralNetworks
             return myTraningResults;
         }
         public TrainingBatch Train( ToImportImages ImportedImages, int TrainingSession , bool iwillDisplayResults )
-        {
-            
+        {    
             if( displayResults is null || displayBatchResults is null )
             {
                 throw new Exception();
@@ -195,17 +216,19 @@ namespace Ai.MNIST.NeuralNetworks
             List<ImportedImage> LiStImportedImages = new List<ImportedImage>();
             int CorrectGuesses = 0;
             TrainingBatch myTraningResults = new TrainingBatch( TrainingSession );
-            List<byte[,]> images = ImportedImages.Images;
-            List<int> labels = ImportedImages.Labels;
+            List<byte[,]> allImages = ImportedImages.Images;
+            List<int> allLabels = ImportedImages.Labels;
             for( int imageIndex = 0 ; imageIndex < ImportedImages.Count ; imageIndex++ )
             {
+                byte[,] ImageByte = allImages[ imageIndex ];
+                int imageLabel = allLabels[ imageIndex ];
                 ImportedImage StImportedImage = new ImportedImage
                 {
-                    image = images[imageIndex],
-                    input = images[imageIndex],
-                    output = ByteInput( images[imageIndex] ),
-                    excpectedOutput = CalculateCorrectOutputs( labels[imageIndex] ),
-                    label = labels[imageIndex]
+                    image = ImageByte,
+                    input = ImageByte,
+                    output = ByteInput( ImageByte ),
+                    excpectedOutput = CalculateCorrectOutputs( imageLabel ),
+                    label = imageLabel
                 };
                 int CorrectOutput = Convert.ToInt16(StImportedImage.label);
                 foreach ( Layer layer in NetworkLayers )
@@ -215,15 +238,26 @@ namespace Ai.MNIST.NeuralNetworks
                 }
                 StImportedImage.cost = Cost( StImportedImage );
                 int iGuessed = GetHighestOutput( StImportedImage );
-                if( iGuessed == CorrectOutput )
+                if( iamImageRecognizer )
                 {
-                    CorrectGuesses++;
+                    
+                    if( iGuessed == CorrectOutput )
+                    {
+                        CorrectGuesses++;
+                    }
+                }
+                else
+                {
+                    if( ( imageLabel == myNumberToRecognize && iGuessed == 1 ) || imageLabel != myNumberToRecognize && iGuessed == 0 )
+                    {
+                        CorrectGuesses++;
+                    }
                 }
 
                 Gradients( StImportedImage );
 
                 LiStImportedImages.Add( StImportedImage );
-                ImageData image = new ImageData( CorrectOutput, StImportedImage.cost, iGuessed, images[ imageIndex ], NetworkLayers[ NetworkLayers.Count - 1 ].StNeurons );
+                ImageData image = new ImageData( CorrectOutput, StImportedImage.cost, iGuessed, ImageByte, NetworkLayers[ NetworkLayers.Count - 1 ].StNeurons );
                 displayResults( image );
                 myTraningResults.ImageData.Add(  image );
             }
@@ -276,7 +310,7 @@ namespace Ai.MNIST.NeuralNetworks
             OurResultsContainer.OurTestingResults.Add( myResults );
             return myResults;
         }
-        public TrainingBatch Test( ToImportImages ImportedImages, int TrainingSession, bool iwillDisplayResults )
+        public TrainingBatch Test( ToImportImages ImportedImages, int TrainingSession, bool iwillDisplayResults, bool VerifyResults )
         {
             if( displayResults is null || displayBatchResults is null )
             {
@@ -308,6 +342,17 @@ namespace Ai.MNIST.NeuralNetworks
                 ImageData image = new ImageData( CorrectGues, StImportedImage.cost, iGuessed, images[ imageIndex ],  NetworkLayers[ NetworkLayers.Count - 1 ].StNeurons );
                 myResults.ImageData.Add( image );
                 displayResults( image );
+                if( VerifyResults )
+                {
+                    int index = 0;
+                    do
+                    {
+                        bool VerificaitonResult = myManager.VerifyNetworkOutputs( new Image( images[ imageIndex ], labels[ imageIndex ] ), iGuessed  ); 
+                        iGuessed = GetXHighestOutput( StImportedImage, iGuessed );
+                        index++;
+                    }
+                    while( VerifyResults == false && index < 10 );
+                }
                 if( iGuessed == CorrectGues )
                 {
                     CorrectGuesses++;
@@ -321,6 +366,8 @@ namespace Ai.MNIST.NeuralNetworks
             OurResultsContainer.OurTestingResults.Add( myResults );
             return myResults;
         }
+
+        
 
         internal TrainingBatch ImportSingleImage( Image image )
         {
@@ -358,7 +405,6 @@ namespace Ai.MNIST.NeuralNetworks
                 layer.ApplyGradients( LearningRate );
             }
         }
-
         private void Gradients( ImportedImage StImportedImage )
         {   
             Layer outputLayer = NetworkLayers[ NetworkLayers.Count - 1 ];
@@ -395,18 +441,50 @@ namespace Ai.MNIST.NeuralNetworks
             }
             return iOutput;
         }
+        private int GetXHighestOutput( ImportedImage StImportedImage, int LastHighest )
+        {
+            double output = new double();
+            int iOutput = 0;
+            int index = 0;
 
+            foreach ( StNeuron neuron in NetworkLayers[ NetworkLayers.Count - 1 ].StNeurons )
+            {
+                if( neuron.output > output && neuron.output < LastHighest )
+                {
+                    output = neuron.output;
+                    iOutput = index;
+                }
+                index++;
+            }
+            return iOutput;
+        }
         public double[] CalculateCorrectOutputs( int label )
         {
-            double[] output = new double[10];
-            for( int index = 0 ; index < 10 ; index++ )
+            double[] output = new double[ myOutputNeurons ];
+            if( iamImageRecognizer )
             {
-                output[ index ] = ( index == label ) ? 1 : 0 ;
+                for( int index = 0 ; index < 10 ; index++ )
+                {
+                    output[ index ] = ( index == label ) ? 1 : 0 ;
+                }
+            }
+            else
+            {
+                for( int index = 0 ; index < 2 ; index++ )
+                {
+                    if( index == 0 )
+                    {
+                        output[ index ] =  label == myNumberToRecognize ? 0 : 1;  
+                    }
+                    else
+                    {
+                        output[ index ] =  label == myNumberToRecognize ? 1: 0;  
+                    }
+                }
             }
 
             return output;
         }
-
         public double TotalCost( List< ImportedImage > LiStImportedImages )
         {
             double totalcost = new double();
@@ -420,15 +498,14 @@ namespace Ai.MNIST.NeuralNetworks
         {
             double error = outPutActivation - ExpectedOutput;
             return error * error ;
-        }
-        
+        }  
         public double NodeCostDerrivative( double outPutActivation, double ExpectedOutput )
         {
             return 2 * ( outPutActivation - ExpectedOutput );
         }
         public double CostDerrivative( ImportedImage StImportedImage )
         {
-            double[] outputs = new double[ 10 ];
+            double[] outputs = new double[ myOutputNeurons ];
             int index = 0;
             Layer outputLayer = NetworkLayers[ NetworkLayers.Count - 1 ];
             foreach ( StNeuron neuron in NetworkLayers[ NetworkLayers.Count - 1 ].StNeurons )
@@ -448,7 +525,7 @@ namespace Ai.MNIST.NeuralNetworks
         }
         private double Cost( ImportedImage StImportedImage )
         {
-            double[] outputs = new double[ 10 ];
+            double[] outputs = new double[ myOutputNeurons ];
             int index = 0;
             Layer outputLayer = NetworkLayers[ NetworkLayers.Count - 1 ];
             foreach ( StNeuron neuron in outputLayer.StNeurons )
@@ -466,6 +543,7 @@ namespace Ai.MNIST.NeuralNetworks
             cost = cost / outputs.Length;
             return cost;
         }
-    }
 
+
+    }
 }

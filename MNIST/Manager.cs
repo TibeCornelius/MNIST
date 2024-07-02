@@ -15,23 +15,27 @@ namespace Ai.MNIST.NeuralNetworks
         public int LayerCount;
         public int[] NeuronCount;
         public ActivationFunctionOptions ActivationFunction;
+        public bool isThisImageRecognizer; 
         
         public NetworkValues()
         {
             this.LayerCount = 0;
             this.NeuronCount = new int[0];
+            this.isThisImageRecognizer = true;
         }
         public void SetDefault()
         {
             this.LayerCount = 3;
             this.NeuronCount = new int[3]{ 400, 150, 10 };
             this.ActivationFunction = ActivationFunctionOptions.Sigmoid;
+            this.isThisImageRecognizer = true;
         }
-        public void SetCustom( int LayerCount, int[] NeuronCount,ActivationFunctionOptions activationFunctionOptions )
+        public void SetCustom( int LayerCount, int[] NeuronCount, ActivationFunctionOptions activationFunctionOptions, bool isThisImageRecognizer )
         {
             this.LayerCount = LayerCount;
             this.NeuronCount = NeuronCount;
             this.ActivationFunction = activationFunctionOptions;
+            this.isThisImageRecognizer = isThisImageRecognizer;
         }
     }
     public readonly struct Image
@@ -55,6 +59,7 @@ namespace Ai.MNIST.NeuralNetworks
     {
         public int Ammount;
         public int Itterations;
+        public bool iamImportingToImageRecognizer;
     }
     public class Manager
     {
@@ -109,24 +114,133 @@ namespace Ai.MNIST.NeuralNetworks
             {
                 Neurons.Add( NeuronCount );
             }
-            network = new Network( Neurons, networkValues.ActivationFunction );
-        }
-
-        public void LoadInNetworkFromJson( NetworkJsonFormat JsonSettings )
-        {
-            network = new Network( JsonSettings );
-        }
-
-        public void SerializeWheightAndBiasesToJson( string output, bool DefaultLocation )
-        {
-            if( network == null )
+            if( networkValues.isThisImageRecognizer )
             {
-                return;            
+                network = new Network( Neurons, networkValues.ActivationFunction, true, 0, this );
             }
-
-            network.CreateJson( output, DefaultLocation ); 
+            else
+            {
+                NumberVerifyerNetworks = new Network[ 10 ];
+                for( int networkIndex = 0 ; networkIndex < 10 ; networkIndex++ )
+                {
+                    NumberVerifyerNetworks[ networkIndex ] = new Network( Neurons, networkValues.ActivationFunction, false, networkIndex, this );
+                }
+            }
+        }
+        public void LoadInNetworkFromJson( NetworkJsonFormat JsonSettings, bool ImageVerifyer = false )
+        {
+            if( ImageVerifyer )
+            {
+                if( NumberVerifyerNetworks is null )
+                {
+                    NumberVerifyerNetworks = new Network[10];
+                }
+                NumberVerifyerNetworks[ JsonSettings.myImageToRecognize ] = new Network( JsonSettings, this );
+            }
+            else
+            {
+                network = new Network( JsonSettings, this );
+            }
         }
 
+        public bool VerifyNetworkOutputs( Image Image, int ResultToCheck )
+        {
+            if( NumberVerifyerNetworks == null )
+            {
+                throw new NullReferenceException();
+            }
+            TrainingBatch results = NumberVerifyerNetworks[ Image.Label ].ImportSingleImage( Image );
+            if( results.ImageData[ 0 ].wasGuesCorrect )
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        public void SerializeWheightAndBiasesToJson( string output, bool DefaultLocation, bool SerializeVerifyer )
+        {
+
+            if( SerializeVerifyer )
+            {
+                if( NumberVerifyerNetworks is null )
+                {
+                    return;
+                }
+                else
+                {
+                    for( int networkIndex = 0 ; networkIndex < 10 ; networkIndex++ )
+                    {
+                        try
+                        {
+                            string newoutput = output + networkIndex;
+                            NumberVerifyerNetworks[ networkIndex ].CreateJson( newoutput, DefaultLocation );
+                        }
+                        catch
+                        {
+
+                        }
+                    }
+                }
+            }
+            else
+            {
+                if( network == null )
+                {
+                    return;            
+                }
+                network.CreateJson( output, DefaultLocation ); 
+            }
+        }
+
+        public List<TrainingBatch> TrainImageVerifyer( ImportSettings trainingImages, Mode mode, bool iwillDisplayResults, bool AddNoise )
+        {
+            Stopwatch stopwatch = new();
+            stopwatch.Start();
+            if( NumberVerifyerNetworks == null )
+            {
+                return new List<TrainingBatch>();
+            }
+ 
+            List<TrainingBatch> trainingResults = new List<TrainingBatch>();
+            int AmmountImages = trainingImages.Ammount;
+            int Itterations = trainingImages.Itterations;
+            for( int Itteration = 0 ; Itteration < Itterations ; Itteration++ )
+            {
+                ToImportImages importSettings = myDataSet.GetSetOfImages( trainingImages.Ammount, mode, AddNoise );
+                for( int NetworkIndex = 0 ; NetworkIndex < 10 ; NetworkIndex++ )
+                {
+                    Network networkToTrain = NumberVerifyerNetworks[ NetworkIndex ];
+                    if ( mode == Mode.Testing )
+                    {
+                        if( iwillDisplayResults )
+                        {
+                            trainingResults.Add( networkToTrain.Test( importSettings, Itteration + 1 , iwillDisplayResults, true ));
+                        }
+                        else
+                        {
+                            trainingResults.Add( networkToTrain.Test( importSettings, Itteration + 1 ) );
+                        }
+                    }
+                    else
+                    {
+                        if( iwillDisplayResults )
+                        {
+                            trainingResults.Add( networkToTrain.Train( importSettings, Itteration + 1, iwillDisplayResults ) );
+                        }
+                        else
+                        {
+                            trainingResults.Add( networkToTrain.Train( importSettings, Itteration + 1 ) );
+                        }
+                    }
+                    Console.WriteLine($"Network to verify number { NetworkIndex }");
+                }
+            }
+            stopwatch.Stop();
+            Console.WriteLine($"Total elapsed time --> { stopwatch.Elapsed} ");
+            return trainingResults;
+        }
         public void SerializeCurrentHistory( string OutputLocation, bool DefaultLocation )
         {
             if( network is null )
@@ -154,7 +268,7 @@ namespace Ai.MNIST.NeuralNetworks
                 {
                     if( iwillDisplayResults )
                     {
-                        trainingResults.Add( network.Test( importSettings, Itteration + 1 , iwillDisplayResults ));
+                        trainingResults.Add( network.Test( importSettings, Itteration + 1 , iwillDisplayResults, true ));
                     }
                     else
                     {
@@ -172,6 +286,53 @@ namespace Ai.MNIST.NeuralNetworks
                         trainingResults.Add( network.Train( importSettings, Itteration + 1 ) );
                     }
                 }
+            }
+            stopwatch.Stop();
+            Console.WriteLine($"Total elapsed time --> { stopwatch.Elapsed} ");
+            return trainingResults;
+        }
+
+        public List<TrainingBatch> TrainSpecificImageVerifyer( ImportSettings trainingImages, Mode mode, bool iwillDisplayResults, bool AddNoise, int ImageVerifyerToTrain )
+        {
+            Stopwatch stopwatch = new();
+            stopwatch.Start();
+            if( NumberVerifyerNetworks == null )
+            {
+                return new List<TrainingBatch>();
+            }
+ 
+            List<TrainingBatch> trainingResults = new List<TrainingBatch>();
+            int AmmountImages = trainingImages.Ammount;
+            int Itterations = trainingImages.Itterations;
+            for( int Itteration = 0 ; Itteration < Itterations ; Itteration++ )
+            {
+                ToImportImages importSettings = myDataSet.GetSetOfImages( trainingImages.Ammount, mode, AddNoise );
+
+                Network networkToTrain = NumberVerifyerNetworks[ ImageVerifyerToTrain ];
+                if ( mode == Mode.Testing )
+                {
+                    if( iwillDisplayResults )
+                    {
+                        trainingResults.Add( networkToTrain.Test( importSettings, Itteration + 1 , iwillDisplayResults, false ));
+                    }
+                    else
+                    {
+                        trainingResults.Add( networkToTrain.Test( importSettings, Itteration + 1 ) );
+                    }
+                }
+                else
+                {
+                    if( iwillDisplayResults )
+                    {
+                        trainingResults.Add( networkToTrain.Train( importSettings, Itteration + 1, iwillDisplayResults ) );
+                    }
+                    else
+                    {
+                        trainingResults.Add( networkToTrain.Train( importSettings, Itteration + 1 ) );
+                    }
+                }
+                Console.WriteLine($"Network to verify number { ImageVerifyerToTrain }");
+                
             }
             stopwatch.Stop();
             Console.WriteLine($"Total elapsed time --> { stopwatch.Elapsed} ");
