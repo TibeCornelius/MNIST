@@ -19,12 +19,12 @@ namespace Ai.MNIST.NeuralNetworks
         private int myNumberToRecognize;
         private int myOutputNeurons;
         private Manager myManager;
-        private const double HyperParameterTuner = 0.7;//Used for momentum base gradient descent
+        private const double HyperParameterTuner = 0.3;//Used for momentum base gradient descent
         public Network( List<int> Network, ActivationFunctionOptions activationFunctionOptions, bool iamImageRecognizer, int myNumberToRecognize, Manager manager )
         {
             this.LiNetwork = Network; 
             this.NetworkLayers = new List<Layer>();
-            this.OurResultsContainer = new Container();qsdf
+            this.OurResultsContainer = new Container();
             this.iamImageRecognizer = iamImageRecognizer;
             this.myNumberToRecognize = myNumberToRecognize;
             this.myOutputNeurons = iamImageRecognizer ? 10 : 2;
@@ -149,13 +149,17 @@ namespace Ai.MNIST.NeuralNetworks
             double returnvalue = WeightedInput / 255;
             return returnvalue;
         }
-        public TrainingBatch Train( ToImportImages ImportedImages, int TrainingSession )
+        public TrainingBatch RunImagesThroughNetwork( ToImportImages ImportedImages, bool TrainNetwork , int Session, bool iwillDisplayResults, bool VerifyResults )
         {
+            if( iwillDisplayResults && ( displayResults is null || displayBatchResults is null ) )
+            {
+                throw new NullReferenceException();
+            }
             Stopwatch stopWatch = new();
             stopWatch.Start();
             List<ImportedImage> LiStImportedImages = new List<ImportedImage>();
             int CorrectGuesses = 0;
-            TrainingBatch myTraningResults = new TrainingBatch( TrainingSession );
+            TrainingBatch myTraningResults = new TrainingBatch( Session );
             List<byte[,]> allImages = ImportedImages.Images;
             List<int> allLabels = ImportedImages.Labels;
             for( int imageIndex = 0 ; imageIndex < allImages.Count ; imageIndex++ )
@@ -180,6 +184,17 @@ namespace Ai.MNIST.NeuralNetworks
                 int iGuessed = GetHighestOutput( StImportedImage );
                 if( iamImageRecognizer )
                 {  
+                    if( VerifyResults )
+                    {
+                        int index = 0;
+                        do
+                        {
+                            bool VerificaitonResult = myManager.VerifyNetworkOutputs( new Image( ImageByte, imageLabel ), iGuessed  ); 
+                            iGuessed = GetXHighestOutput( StImportedImage, iGuessed );
+                            index++;
+                        }
+                        while( VerifyResults == false && index < 10 );
+                    }
                     if( iGuessed == CorrectOutput )
                     {
                         CorrectGuesses++;
@@ -195,180 +210,35 @@ namespace Ai.MNIST.NeuralNetworks
 
                 Gradients( StImportedImage );
                 LiStImportedImages.Add( StImportedImage );
-                myTraningResults.ImageData.Add( new ImageData( CorrectOutput, StImportedImage.cost, iGuessed, ImageByte, NetworkLayers[ NetworkLayers.Count - 1 ].StNeurons ) );
+                ImageData image = new ImageData( CorrectOutput, StImportedImage.cost, iGuessed, ImageByte, NetworkLayers[ NetworkLayers.Count - 1 ].StNeurons );
+                if( iwillDisplayResults )
+                {
+#pragma warning disable CS8602// Dereference of a possibly null reference.
+                    displayResults( image );
+#pragma warning restore CS8602// Dereference of a possibly null reference.
+                }
+                myTraningResults.ImageData.Add( image );
             }
             double TotalAverageCost = TotalCost( LiStImportedImages );
             double LearningRate = 0.001;
-            ApplyAllGradients( LearningRate );
-            ResetAllGradients();
+            if( TrainNetwork )
+            {
+                ApplyAllGradients( LearningRate );
+                ResetAllGradients();
+            }
             myTraningResults.CorrectGuesses = CorrectGuesses;
             myTraningResults.TotalAverageCost = TotalAverageCost;
             OurResultsContainer.OurTrainingResults.Add( myTraningResults );
+            if( iwillDisplayResults )
+            {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+                displayBatchResults( myTraningResults );
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
+            }
             stopWatch.Stop();
             Console.WriteLine( stopWatch.Elapsed ); 
             return myTraningResults;
         }
-        public TrainingBatch Train( ToImportImages ImportedImages, int TrainingSession , bool iwillDisplayResults )
-        {    
-            if( displayResults is null || displayBatchResults is null )
-            {
-                throw new Exception();
-            }
-            List<ImportedImage> LiStImportedImages = new List<ImportedImage>();
-            int CorrectGuesses = 0;
-            TrainingBatch myTraningResults = new TrainingBatch( TrainingSession );
-            List<byte[,]> allImages = ImportedImages.Images;
-            List<int> allLabels = ImportedImages.Labels;
-            for( int imageIndex = 0 ; imageIndex < ImportedImages.Count ; imageIndex++ )
-            {
-                byte[,] ImageByte = allImages[ imageIndex ];
-                int imageLabel = allLabels[ imageIndex ];
-                ImportedImage StImportedImage = new ImportedImage
-                {
-                    image = ImageByte,
-                    input = ImageByte,
-                    output = ByteInput( ImageByte ),
-                    excpectedOutput = CalculateCorrectOutputs( imageLabel ),
-                    label = imageLabel
-                };
-                int CorrectOutput = Convert.ToInt16(StImportedImage.label);
-                foreach ( Layer layer in NetworkLayers )
-                {
-                    layer.CalculateInputsEveryNeuron( StImportedImage );
-                    layer.CalculateOutputs();
-                }
-                StImportedImage.cost = Cost( StImportedImage );
-                int iGuessed = GetHighestOutput( StImportedImage );
-                if( iamImageRecognizer )
-                {
-                    
-                    if( iGuessed == CorrectOutput )
-                    {
-                        CorrectGuesses++;
-                    }
-                }
-                else
-                {
-                    if( ( imageLabel == myNumberToRecognize && iGuessed == 1 ) || imageLabel != myNumberToRecognize && iGuessed == 0 )
-                    {
-                        CorrectGuesses++;
-                    }
-                }
-
-                Gradients( StImportedImage );
-
-                LiStImportedImages.Add( StImportedImage );
-                ImageData image = new ImageData( CorrectOutput, StImportedImage.cost, iGuessed, ImageByte, NetworkLayers[ NetworkLayers.Count - 1 ].StNeurons );
-                displayResults( image );
-                myTraningResults.ImageData.Add(  image );
-            }
-            double TotalAverageCost = TotalCost( LiStImportedImages );
-            double LearningRate = 0.001;
-            ApplyAllGradients( LearningRate );
-            ResetAllGradients();
-            myTraningResults.CorrectGuesses = CorrectGuesses;
-            myTraningResults.TotalAverageCost = TotalAverageCost;
-            OurResultsContainer.OurTrainingResults.Add( myTraningResults );
-            
-            displayBatchResults( myTraningResults );
-            return myTraningResults;
-        }
-        public TrainingBatch Test( ToImportImages ImportedImages, int TrainingSession )
-        {
-            List<ImportedImage> LiStImportedImages = new List<ImportedImage>();
-            int CorrectGuesses = 0;
-            TrainingBatch myResults = new TrainingBatch( TrainingSession );
-            List<byte[,]> images = ImportedImages.Images;
-            List<int> labels = ImportedImages.Labels;
-            for( int imageIndex = 0 ; imageIndex < ImportedImages.Count ; imageIndex++ )
-            {
-                ImportedImage StImportedImage = new ImportedImage
-                {
-                    image = images[imageIndex],
-                    input = images[imageIndex],
-                    output = ByteInput( images[imageIndex] ),
-                    excpectedOutput = CalculateCorrectOutputs( labels[imageIndex] ),
-                    label = labels[imageIndex]
-                };
-                int CorrectGues = Convert.ToInt16( StImportedImage.label );
-                foreach ( Layer layer in NetworkLayers )
-                {
-                    layer.CalculateInputsEveryNeuron( StImportedImage );
-                    layer.CalculateOutputs();
-                }
-                StImportedImage.cost = Cost( StImportedImage );
-                int iGuessed = GetHighestOutput( StImportedImage );
-                myResults.ImageData.Add( new ImageData( CorrectGues, StImportedImage.cost, iGuessed, images[ imageIndex ],  NetworkLayers[ NetworkLayers.Count - 1 ].StNeurons ) );
-                if( iGuessed == CorrectGues )
-                {
-                    CorrectGuesses++;
-                }
-                LiStImportedImages.Add( StImportedImage );
-            }
-            double TotalAverageCost = TotalCost( LiStImportedImages );
-            myResults.CorrectGuesses = CorrectGuesses;
-            myResults.TotalAverageCost = TotalAverageCost;
-            OurResultsContainer.OurTestingResults.Add( myResults );
-            return myResults;
-        }
-        public TrainingBatch Test( ToImportImages ImportedImages, int TrainingSession, bool iwillDisplayResults, bool VerifyResults )
-        {
-            if( displayResults is null || displayBatchResults is null )
-            {
-                throw new Exception();
-            }
-            List<ImportedImage> LiStImportedImages = new List<ImportedImage>();
-            int CorrectGuesses = 0;
-            List<byte[,]> images = ImportedImages.Images;
-            List<int> labels = ImportedImages.Labels;
-            TrainingBatch myResults = new TrainingBatch( TrainingSession );
-            for( int imageIndex = 0 ; imageIndex < ImportedImages.Count ; imageIndex++ )
-            {
-                ImportedImage StImportedImage = new ImportedImage
-                {
-                    image = images[imageIndex],
-                    input = images[imageIndex],
-                    output = ByteInput( images[imageIndex] ),
-                    excpectedOutput = CalculateCorrectOutputs( labels[imageIndex] ),
-                    label = labels[imageIndex]
-                };
-                int CorrectGues = Convert.ToInt16( StImportedImage.label );
-                foreach ( Layer layer in NetworkLayers )
-                {
-                    layer.CalculateInputsEveryNeuron( StImportedImage );
-                    layer.CalculateOutputs();
-                }
-                StImportedImage.cost = Cost( StImportedImage );
-                int iGuessed = GetHighestOutput( StImportedImage );
-                ImageData image = new ImageData( CorrectGues, StImportedImage.cost, iGuessed, images[ imageIndex ],  NetworkLayers[ NetworkLayers.Count - 1 ].StNeurons );
-                myResults.ImageData.Add( image );
-                displayResults( image );
-                if( VerifyResults )
-                {
-                    int index = 0;
-                    do
-                    {
-                        bool VerificaitonResult = myManager.VerifyNetworkOutputs( new Image( images[ imageIndex ], labels[ imageIndex ] ), iGuessed  ); 
-                        iGuessed = GetXHighestOutput( StImportedImage, iGuessed );
-                        index++;
-                    }
-                    while( VerifyResults == false && index < 10 );
-                }
-                if( iGuessed == CorrectGues )
-                {
-                    CorrectGuesses++;
-                }
-                LiStImportedImages.Add( StImportedImage );
-            }
-            double TotalAverageCost = TotalCost( LiStImportedImages );
-            myResults.CorrectGuesses = CorrectGuesses;
-            myResults.TotalAverageCost = TotalAverageCost;
-            displayBatchResults( myResults );
-            OurResultsContainer.OurTestingResults.Add( myResults );
-            return myResults;
-        }
-
-        
 
         internal TrainingBatch ImportSingleImage( Image image )
         {

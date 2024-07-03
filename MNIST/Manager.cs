@@ -214,25 +214,13 @@ namespace Ai.MNIST.NeuralNetworks
                     Network networkToTrain = NumberVerifyerNetworks[ NetworkIndex ];
                     if ( mode == Mode.Testing )
                     {
-                        if( iwillDisplayResults )
-                        {
-                            trainingResults.Add( networkToTrain.Test( importSettings, Itteration + 1 , iwillDisplayResults, true ));
-                        }
-                        else
-                        {
-                            trainingResults.Add( networkToTrain.Test( importSettings, Itteration + 1 ) );
-                        }
+                        bool iamTrainingNetwork = false;
+                        trainingResults.Add( networkToTrain.RunImagesThroughNetwork( importSettings, iamTrainingNetwork, Itteration + 1 , iwillDisplayResults, false ) );
                     }
                     else
                     {
-                        if( iwillDisplayResults )
-                        {
-                            trainingResults.Add( networkToTrain.Train( importSettings, Itteration + 1, iwillDisplayResults ) );
-                        }
-                        else
-                        {
-                            trainingResults.Add( networkToTrain.Train( importSettings, Itteration + 1 ) );
-                        }
+                        bool iamTrainingNetwork = true;
+                        trainingResults.Add( networkToTrain.RunImagesThroughNetwork( importSettings, iamTrainingNetwork, Itteration + 1 , iwillDisplayResults, false ) );
                     }
                     Console.WriteLine($"Network to verify number { NetworkIndex }");
                 }
@@ -266,25 +254,13 @@ namespace Ai.MNIST.NeuralNetworks
                 ToImportImages importSettings = myDataSet.GetSetOfImages( trainingImages.Ammount, mode, AddNoise );
                 if ( mode == Mode.Testing )
                 {
-                    if( iwillDisplayResults )
-                    {
-                        trainingResults.Add( network.Test( importSettings, Itteration + 1 , iwillDisplayResults, false ));
-                    }
-                    else
-                    {
-                        trainingResults.Add( network.Test( importSettings, Itteration + 1 ) );
-                    }
+                    bool iamTrainingNetwork = false;
+                    trainingResults.Add( network.RunImagesThroughNetwork( importSettings, iamTrainingNetwork, Itteration + 1 , iwillDisplayResults, false ) );
                 }
                 else
                 {
-                    if( iwillDisplayResults )
-                    {
-                        trainingResults.Add( network.Train( importSettings, Itteration + 1, iwillDisplayResults ) );
-                    }
-                    else
-                    {
-                        trainingResults.Add( network.Train( importSettings, Itteration + 1 ) );
-                    }
+                    bool iamTrainingNetwork = true;
+                    trainingResults.Add( network.RunImagesThroughNetwork( importSettings, iamTrainingNetwork, Itteration + 1 , iwillDisplayResults, false ) );
                 }
             }
             stopwatch.Stop();
@@ -311,25 +287,13 @@ namespace Ai.MNIST.NeuralNetworks
                 Network networkToTrain = NumberVerifyerNetworks[ ImageVerifyerToTrain ];
                 if ( mode == Mode.Testing )
                 {
-                    if( iwillDisplayResults )
-                    {
-                        trainingResults.Add( networkToTrain.Test( importSettings, Itteration + 1 , iwillDisplayResults, false ));
-                    }
-                    else
-                    {
-                        trainingResults.Add( networkToTrain.Test( importSettings, Itteration + 1 ) );
-                    }
+                    bool iamTrainingNetwork = false;
+                    trainingResults.Add( networkToTrain.RunImagesThroughNetwork( importSettings, iamTrainingNetwork, Itteration + 1 , iwillDisplayResults, false ) );
                 }
                 else
                 {
-                    if( iwillDisplayResults )
-                    {
-                        trainingResults.Add( networkToTrain.Train( importSettings, Itteration + 1, iwillDisplayResults ) );
-                    }
-                    else
-                    {
-                        trainingResults.Add( networkToTrain.Train( importSettings, Itteration + 1 ) );
-                    }
+                    bool iamTrainingNetwork = true;
+                    trainingResults.Add( networkToTrain.RunImagesThroughNetwork( importSettings, iamTrainingNetwork, Itteration + 1 , iwillDisplayResults, false ) );
                 }
                 Console.WriteLine($"Network to verify number { ImageVerifyerToTrain }");
                 
