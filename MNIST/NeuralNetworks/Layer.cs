@@ -12,10 +12,11 @@ namespace Ai.MNIST.NeuralNetworks
     {
         public double[,] WeightsPreviousLayer;
         public double[,] WeightsGradient;
+        public double[,] Velocity;//Used for Momentum base gradient descent
 
         public StNeuron[] StNeurons;
         private Network ParentNetwork;
-        int NeuronAmmount;
+        private int NeuronAmmount;
         private int LayerLevel;
         public delegate double ActivationFunction( double intput );
         private readonly ActivationFunction myActivationFunction;
@@ -37,7 +38,8 @@ namespace Ai.MNIST.NeuralNetworks
                     throw new ArgumentOutOfRangeException();
             }
             this.StNeurons = initialize_Neurons( _NeuronAmmount, activationFunction );
-            this.WeightsPreviousLayer = initialize_Weights( _ParentNetwork, LayerLevel, _NeuronAmmount, activationFunction );           
+            this.WeightsPreviousLayer = initialize_Weights( _ParentNetwork, LayerLevel, _NeuronAmmount, activationFunction ); 
+            this.Velocity = initializeVelocity( _NeuronAmmount );          
             
             if( _LayerLevel == 0 )
             {
@@ -52,12 +54,15 @@ namespace Ai.MNIST.NeuralNetworks
             this.LayerLevel = _LayerLevel;
         }
 
+        
+
         public Layer( Network _ParentNetwork, double[,] Wheigts, double[] Biases, int _LayerLevel, int _NeuronAmmount, bool iamFinalLayer, ActivationFunctionOptions activationFunction )
         {//Gets executed when loading network from json file
             this.ParentNetwork = _ParentNetwork;
             this.LayerLevel = _LayerLevel;
             this.StNeurons = initialize_NeuronsJson( Biases );
             this.WeightsPreviousLayer = Wheigts;
+            this.Velocity = initializeVelocity( _NeuronAmmount );
             switch( activationFunction )
             {
                 case ActivationFunctionOptions.Sigmoid:
@@ -109,6 +114,12 @@ namespace Ai.MNIST.NeuralNetworks
             }
 
             return NeuronArray;
+        }
+        private double[,] initializeVelocity( int neuronAmmount )
+        {
+            int inputSize = LayerLevel != 0 ? ParentNetwork.NetworkLayers[ LayerLevel - 1 ].NeuronAmmount : 28 * 28;
+            double[,] Velocity = new double[ inputSize, neuronAmmount ];
+            return Velocity;
         }
         private StNeuron[] initialize_Neurons( int NeuronAmmount, ActivationFunctionOptions activationType )
         {
@@ -288,19 +299,23 @@ namespace Ai.MNIST.NeuralNetworks
         #endregion
         #region Update Weights, biases
         
-        public void ApplyGradients( double LearningRate )
+        public void ApplyGradients( double LearningRate, double HyperParameterTuner )
         {
             int NeuronGoingIn = 784;
             if ( LayerLevel - 1 >= 0 )
             {
                 NeuronGoingIn = ParentNetwork.LiNetwork[ LayerLevel - 1 ];
             }
+
             Parallel.For( 0, NeuronAmmount, nodeOut =>
             {
                 StNeurons[ nodeOut ].biases -= StNeurons[ nodeOut ].biasesGradient * LearningRate;
                 for( int nodeIn = 0 ; nodeIn < NeuronGoingIn ; nodeIn++ )
                 {
-                    WeightsPreviousLayer[ nodeIn, nodeOut ] -= WeightsGradient[ nodeIn, nodeOut ] * LearningRate;
+
+                    Velocity[ nodeIn, nodeOut ] = HyperParameterTuner * Velocity[ nodeIn, nodeOut ] + ( WeightsGradient[ nodeIn, nodeOut ] * LearningRate );
+                    
+                    WeightsPreviousLayer[ nodeIn, nodeOut ] -= Velocity[ nodeIn, nodeOut ];
                 }
             });
         }

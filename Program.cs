@@ -351,9 +351,22 @@ namespace Ai.MNIST.Terminal
             }
             else
             {
-                myManager.ImportSetOfImages( settings, mode, DisplayResults, AddNoise );
+                ShowTotalResults( myManager.ImportSetOfImages( settings, mode, DisplayResults, AddNoise ) );
             }
         }
+
+        private void ShowTotalResults( List<TrainingBatch> trainingBatches )
+        {
+            double TotalCost = 0;
+            int index = 0;
+            foreach( TrainingBatch trainingSet in  trainingBatches )
+            {
+                TotalCost += trainingSet.TotalAverageCost;
+                index++;
+            }
+            Console.WriteLine($"The total average cost over the training set was { TotalCost/index }");
+        }
+
         public void DisplayImageResults( ImageData image )
         {
             //Console.WriteLine("Hello world");

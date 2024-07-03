@@ -27,7 +27,7 @@ namespace Ai.MNIST.NeuralNetworks
         {
             this.LayerCount = 3;
             this.NeuronCount = new int[3]{ 400, 150, 10 };
-            this.ActivationFunction = ActivationFunctionOptions.Sigmoid;
+            this.ActivationFunction = ActivationFunctionOptions.ReLU;
             this.isThisImageRecognizer = true;
         }
         public void SetCustom( int LayerCount, int[] NeuronCount, ActivationFunctionOptions activationFunctionOptions, bool isThisImageRecognizer )
@@ -268,7 +268,7 @@ namespace Ai.MNIST.NeuralNetworks
                 {
                     if( iwillDisplayResults )
                     {
-                        trainingResults.Add( network.Test( importSettings, Itteration + 1 , iwillDisplayResults, true ));
+                        trainingResults.Add( network.Test( importSettings, Itteration + 1 , iwillDisplayResults, false ));
                     }
                     else
                     {

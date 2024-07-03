@@ -19,11 +19,12 @@ namespace Ai.MNIST.NeuralNetworks
         private int myNumberToRecognize;
         private int myOutputNeurons;
         private Manager myManager;
+        private const double HyperParameterTuner = 0.7;//Used for momentum base gradient descent
         public Network( List<int> Network, ActivationFunctionOptions activationFunctionOptions, bool iamImageRecognizer, int myNumberToRecognize, Manager manager )
         {
             this.LiNetwork = Network; 
             this.NetworkLayers = new List<Layer>();
-            this.OurResultsContainer = new Container();
+            this.OurResultsContainer = new Container();qsdf
             this.iamImageRecognizer = iamImageRecognizer;
             this.myNumberToRecognize = myNumberToRecognize;
             this.myOutputNeurons = iamImageRecognizer ? 10 : 2;
@@ -402,7 +403,7 @@ namespace Ai.MNIST.NeuralNetworks
         {
             foreach( Layer layer in NetworkLayers )
             {
-                layer.ApplyGradients( LearningRate );
+                layer.ApplyGradients( LearningRate, HyperParameterTuner );
             }
         }
         private void Gradients( ImportedImage StImportedImage )
