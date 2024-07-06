@@ -3,12 +3,12 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Text.Json;
-using Ai.MNIST.NeuralNetworks.TrainingResults;
-using Ai.MNIST.Data;
+using MNIST.NeuralNetworks.TrainingResults;
+using MNIST.Data;
 using System.Diagnostics;
 
 
-namespace Ai.MNIST.NeuralNetworks
+namespace MNIST.NeuralNetworks
 {
     public struct NetworkValues
     {
@@ -27,7 +27,7 @@ namespace Ai.MNIST.NeuralNetworks
         {
             this.LayerCount = 3;
             this.NeuronCount = new int[3]{ 400, 150, 10 };
-            this.ActivationFunction = ActivationFunctionOptions.ReLU;
+            this.ActivationFunction = ActivationFunctionOptions.LeakyRelu;
             this.isThisImageRecognizer = true;
         }
         public void SetCustom( int LayerCount, int[] NeuronCount, ActivationFunctionOptions activationFunctionOptions, bool isThisImageRecognizer )
@@ -251,7 +251,7 @@ namespace Ai.MNIST.NeuralNetworks
             int Itterations = trainingImages.Itterations;
             for( int Itteration = 0 ; Itteration < Itterations ; Itteration++ )
             {
-                ToImportImages importSettings = myDataSet.GetSetOfImages( trainingImages.Ammount, mode, AddNoise );
+                ToImportImages importSettings = myDataSet.GetSetOfImages( AmmountImages, mode, AddNoise );
                 if ( mode == Mode.Testing )
                 {
                     bool iamTrainingNetwork = false;

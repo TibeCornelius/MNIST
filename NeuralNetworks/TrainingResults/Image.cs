@@ -1,4 +1,4 @@
-namespace Ai.MNIST.NeuralNetworks.TrainingResults
+namespace MNIST.NeuralNetworks.TrainingResults
 {
     public class ImageData( int ImageNumber, double Cost, int Guess, byte[,] Image, StNeuron[] OutputNeurons )
     {

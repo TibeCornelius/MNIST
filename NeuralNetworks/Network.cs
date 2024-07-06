@@ -1,9 +1,9 @@
 using System.Diagnostics;
 using System.Text.Json;
-using Ai.MNIST.NeuralNetworks.TrainingResults;
-using Ai.MNIST.Util;
+using MNIST.NeuralNetworks.TrainingResults;
+using MNIST.Util;
 
-namespace Ai.MNIST.NeuralNetworks
+namespace MNIST.NeuralNetworks
 {
     public sealed class Network
     {
@@ -19,7 +19,7 @@ namespace Ai.MNIST.NeuralNetworks
         private int myNumberToRecognize;
         private int myOutputNeurons;
         private Manager myManager;
-        private const double HyperParameterTuner = 0.3;//Used for momentum base gradient descent
+        private const double HyperParameterTuner = 0.5;//Used for momentum base gradient descent
         public Network( List<int> Network, ActivationFunctionOptions activationFunctionOptions, bool iamImageRecognizer, int myNumberToRecognize, Manager manager )
         {
             this.LiNetwork = Network; 
@@ -174,7 +174,6 @@ namespace Ai.MNIST.NeuralNetworks
                     excpectedOutput = CalculateCorrectOutputs( imageLabel ),
                     label = imageLabel
                 };
-                int CorrectOutput = Convert.ToInt16(StImportedImage.label);
                 foreach ( Layer layer in NetworkLayers )
                 {
                     layer.CalculateInputsEveryNeuron( StImportedImage );
@@ -195,7 +194,7 @@ namespace Ai.MNIST.NeuralNetworks
                         }
                         while( VerifyResults == false && index < 10 );
                     }
-                    if( iGuessed == CorrectOutput )
+                    if( iGuessed == StImportedImage.label )
                     {
                         CorrectGuesses++;
                     }
@@ -210,7 +209,7 @@ namespace Ai.MNIST.NeuralNetworks
 
                 Gradients( StImportedImage );
                 LiStImportedImages.Add( StImportedImage );
-                ImageData image = new ImageData( CorrectOutput, StImportedImage.cost, iGuessed, ImageByte, NetworkLayers[ NetworkLayers.Count - 1 ].StNeurons );
+                ImageData image = new ImageData( StImportedImage.label, StImportedImage.cost, iGuessed, ImageByte, NetworkLayers[ NetworkLayers.Count - 1 ].StNeurons );
                 if( iwillDisplayResults )
                 {
 #pragma warning disable CS8602// Dereference of a possibly null reference.

@@ -1,6 +1,6 @@
-using Google.Protobuf.WellKnownTypes;
 
-namespace Ai.MNIST.NeuralNetworks
+
+namespace MNIST.NeuralNetworks
 {
     public static class ActivationFunctions
     {
@@ -15,13 +15,21 @@ namespace Ai.MNIST.NeuralNetworks
             double Activation = Sigmoid( WeightedInput );
             return Activation * ( 1 - Activation );
         }
+        public static double LeakyRelu( double WeightedInput )
+        {
+            return WeightedInput > 0 ? WeightedInput : 0.01 * WeightedInput;  
+        }
+        public static double LeakyReluDx( double WeightedInput )
+        {
+            return WeightedInput > 0 ? 1 : 0.01;  
+        }
         public static double ReLU( double WeightedInput )
         {
-            return WeightedInput > 0 ? WeightedInput : 0.01 * WeightedInput;
+            return Math.Max( 0, WeightedInput );
         }
         public static double ReLUDx( double WeightedInput )
         {
-            return WeightedInput > 0 ? 1 : 001;
+            return WeightedInput > 0 ? 1 : 0;
         }
         public static double[] SoftMax( double[] WeightedInputs )
         {
@@ -39,7 +47,5 @@ namespace Ai.MNIST.NeuralNetworks
             double randStdNormal = Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(2.0 * Math.PI * u2); // Random normal(0,1)
             return mean + stddev * randStdNormal; // Random normal(mean,stdDev^2)
         }
-
-
     }
 }

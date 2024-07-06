@@ -1,11 +1,12 @@
 using System.Text.Json;
 
-namespace Ai.MNIST.NeuralNetworks
+namespace MNIST.NeuralNetworks
 {
     public enum ActivationFunctionOptions
     {
         Sigmoid,
         ReLU,
+        LeakyRelu,
     }
 
     public sealed class Layer
@@ -24,8 +25,15 @@ namespace Ai.MNIST.NeuralNetworks
  
         public Layer( Network _ParentNetwork, int _NeuronAmmount, int _LayerLevel, ActivationFunctionOptions activationFunction )
         {
+            this.NeuronAmmount = _NeuronAmmount;
+            this.ParentNetwork = _ParentNetwork;
+            this.LayerLevel = _LayerLevel;
             switch( activationFunction )
             {
+                case ActivationFunctionOptions.LeakyRelu:
+                    this.myActivationFunction = ActivationFunctions.LeakyRelu;
+                    this.myActivationFunctionDx = ActivationFunctions.LeakyReluDx;
+                    break;
                 case ActivationFunctionOptions.Sigmoid:
                     this.myActivationFunction = ActivationFunctions.Sigmoid;
                     this.myActivationFunctionDx = ActivationFunctions.SigmoidDx;
@@ -38,8 +46,8 @@ namespace Ai.MNIST.NeuralNetworks
                     throw new ArgumentOutOfRangeException();
             }
             this.StNeurons = initialize_Neurons( _NeuronAmmount, activationFunction );
-            this.WeightsPreviousLayer = initialize_Weights( _ParentNetwork, LayerLevel, _NeuronAmmount, activationFunction ); 
-            this.Velocity = initializeVelocity( _NeuronAmmount );          
+            this.WeightsPreviousLayer = initialize_Weights( _ParentNetwork, _LayerLevel, _NeuronAmmount, activationFunction ); 
+            this.Velocity = initializeVelocity( _NeuronAmmount, _LayerLevel );          
             
             if( _LayerLevel == 0 )
             {
@@ -49,9 +57,6 @@ namespace Ai.MNIST.NeuralNetworks
             {
                 this.WeightsGradient = new double[ _ParentNetwork.LiNetwork[ _LayerLevel - 1 ], _NeuronAmmount ];
             }
-            this.NeuronAmmount = _NeuronAmmount;
-            this.ParentNetwork = _ParentNetwork;
-            this.LayerLevel = _LayerLevel;
         }
 
         
@@ -62,7 +67,7 @@ namespace Ai.MNIST.NeuralNetworks
             this.LayerLevel = _LayerLevel;
             this.StNeurons = initialize_NeuronsJson( Biases );
             this.WeightsPreviousLayer = Wheigts;
-            this.Velocity = initializeVelocity( _NeuronAmmount );
+            this.Velocity = initializeVelocity( _NeuronAmmount, _LayerLevel );
             switch( activationFunction )
             {
                 case ActivationFunctionOptions.Sigmoid:
@@ -72,6 +77,10 @@ namespace Ai.MNIST.NeuralNetworks
                 case ActivationFunctionOptions.ReLU:
                     this.myActivationFunction = ActivationFunctions.ReLU;
                     this.myActivationFunctionDx = ActivationFunctions.ReLUDx;
+                    break;
+                case ActivationFunctionOptions.LeakyRelu:
+                    this.myActivationFunction = ActivationFunctions.LeakyRelu;
+                    this.myActivationFunctionDx = ActivationFunctions.LeakyReluDx;
                     break;
                 default : 
                     throw new ArgumentOutOfRangeException();
@@ -115,9 +124,9 @@ namespace Ai.MNIST.NeuralNetworks
 
             return NeuronArray;
         }
-        private double[,] initializeVelocity( int neuronAmmount )
+        private double[,] initializeVelocity( int neuronAmmount, int _LayerLevel )
         {
-            int inputSize = LayerLevel != 0 ? ParentNetwork.NetworkLayers[ LayerLevel - 1 ].NeuronAmmount : 28 * 28;
+            int inputSize = _LayerLevel != 0 ? ParentNetwork.LiNetwork[ _LayerLevel - 1 ] : 28 * 28;
             double[,] Velocity = new double[ inputSize, neuronAmmount ];
             return Velocity;
         }
@@ -134,7 +143,10 @@ namespace Ai.MNIST.NeuralNetworks
                         Rbiases = random.NextDouble() * 2 - 1 ;
                         break;
                     case ActivationFunctionOptions.ReLU:
-                        Rbiases = 0.01;;
+                        Rbiases = 0.01;
+                        break;
+                    case ActivationFunctionOptions.LeakyRelu:
+                        Rbiases = 0.01;
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -156,6 +168,15 @@ namespace Ai.MNIST.NeuralNetworks
 
             switch( activationType )
             {
+                case ActivationFunctionOptions.LeakyRelu:
+                    for ( int indexPreviousLayer = 0; indexPreviousLayer < inputSize; indexPreviousLayer++ )
+                    {
+                        for (int indexThisLayer = 0; indexThisLayer < NeuronAmmount; indexThisLayer++ )
+                        {
+                            weights[ indexPreviousLayer, indexThisLayer ] = RandomNumber.NextGaussian( 0, stddev );
+                        }
+                    }
+                    return weights;
                 case ActivationFunctionOptions.ReLU:
                     for ( int indexPreviousLayer = 0; indexPreviousLayer < inputSize; indexPreviousLayer++ )
                     {
@@ -190,9 +211,9 @@ namespace Ai.MNIST.NeuralNetworks
                 {
                     RefStNeuron prevLayerNeurons = ParentNetwork.GetNeuronsPrevLayer( LayerLevel );
                     double input = StNeurons[ indexNeuron ].biases;
-                    for( int index = 0 ; index < ParentNetwork.NetworkLayers[ LayerLevel - 1 ].StNeurons.Length ; index++ )
+                    for( int inputNeuron = 0 ; inputNeuron < prevLayerNeurons.Neurons.Length ; inputNeuron++ )
                     {
-                        input += prevLayerNeurons.Neurons[ index ].output * WeightsPreviousLayer[ index, indexNeuron ];
+                        input += prevLayerNeurons.Neurons[ inputNeuron ].output * WeightsPreviousLayer[ inputNeuron, indexNeuron ];
                     }
                     StNeurons[ indexNeuron ].input = input;
                 });
@@ -203,9 +224,9 @@ namespace Ai.MNIST.NeuralNetworks
                 {
                     double input = StNeurons[ indexNeuron ].biases;
             
-                    for( int index = 0 ; index < 784 ; index++ )
+                    for( int inputNeuron = 0 ; inputNeuron < 784 ; inputNeuron++ )
                     {
-                        input += StImportedImage.output[ index ] * WeightsPreviousLayer[ index, indexNeuron ];
+                        input += StImportedImage.output[ inputNeuron ] * WeightsPreviousLayer[ inputNeuron, indexNeuron ];
                     }
                     StNeurons[ indexNeuron ].input = input;
                 });
@@ -291,10 +312,6 @@ namespace Ai.MNIST.NeuralNetworks
                 double derrivativeCostBiases = 1 * nodeValues[ nodeOut ];
                 StNeurons[ nodeOut ].biasesGradient = derrivativeCostBiases;
             });
-            for( int nodeOut = 0 ; nodeOut < nodeValues.Length ; nodeOut++ )
-            {
-                
-            }
         }
         #endregion
         #region Update Weights, biases

@@ -1,4 +1,4 @@
-namespace Ai.MNIST.Util
+namespace MNIST.Util
 {
     public static class Converter
     {

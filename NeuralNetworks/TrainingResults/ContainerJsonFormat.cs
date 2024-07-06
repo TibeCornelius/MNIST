@@ -1,4 +1,4 @@
-namespace Ai.MNIST.NeuralNetworks.TrainingResults
+namespace MNIST.NeuralNetworks.TrainingResults
 {
     public class ContainerJsonFormat
     {

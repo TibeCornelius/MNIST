@@ -1,4 +1,0 @@
-namespace Ai.MNIST.NeuralNetworks
-{
-    
-}

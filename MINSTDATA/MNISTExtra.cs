@@ -2,7 +2,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 
-namespace Ai.MNIST.Data
+namespace MNIST.Data
 {
     public class MNISTExtra
     {   

@@ -1,7 +1,7 @@
-using Ai.MNIST.NeuralNetworks;
+using MNIST.NeuralNetworks;
 
 
-namespace Ai.MNIST.Data
+namespace MNIST.Data
 {
     public struct Data( List<byte[,]> TrainingImages, List<int> TrainingLabels, List<byte[,]> TestingImages, List<int> TestingLabels )
     {

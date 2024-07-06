@@ -1,4 +1,4 @@
-namespace Ai.MNIST.NeuralNetworks
+namespace MNIST.NeuralNetworks
 {
     public struct StNeuron
     {
