@@ -6,6 +6,7 @@ namespace MNIST.NeuralNetworks.TrainingResults
         public int CorrectGuesses;
         public double TotalAverageCost;
         public int TrainingSession;
+        public double TrainingDuration;
         public TrainingBatch( int TrainingSession )
         {
             this.TrainingSession = TrainingSession;

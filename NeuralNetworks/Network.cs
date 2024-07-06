@@ -149,7 +149,7 @@ namespace MNIST.NeuralNetworks
             double returnvalue = WeightedInput / 255;
             return returnvalue;
         }
-        public TrainingBatch RunImagesThroughNetwork( ToImportImages ImportedImages, bool TrainNetwork , int Session, bool iwillDisplayResults, bool VerifyResults )
+        public TrainingBatch RunImagesThroughNetwork( ToImportImages ImportedImages, bool TrainNetwork , int Session, bool iwillDisplayResults, bool VerifyResults, bool CollectData )
         {
             if( iwillDisplayResults && ( displayResults is null || displayBatchResults is null ) )
             {
@@ -227,7 +227,7 @@ namespace MNIST.NeuralNetworks
             }
             myTraningResults.CorrectGuesses = CorrectGuesses;
             myTraningResults.TotalAverageCost = TotalAverageCost;
-            OurResultsContainer.OurTrainingResults.Add( myTraningResults );
+            OurResultsContainer.OurResults.Add( myTraningResults );
             if( iwillDisplayResults )
             {
 #pragma warning disable CS8602 // Dereference of a possibly null reference.

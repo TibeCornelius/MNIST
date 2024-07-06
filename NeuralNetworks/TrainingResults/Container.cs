@@ -2,12 +2,13 @@ namespace MNIST.NeuralNetworks.TrainingResults
 {
     public struct Container
     {
-        public List<TrainingBatch> OurTrainingResults;
-        public List<TrainingBatch> OurTestingResults;
+        public List<TrainingBatch> OurResults;
+        public List<double> OurTrainingTimes;
+
         public Container()
         {
-            this.OurTestingResults = new List<TrainingBatch>();
-            this.OurTrainingResults = new List<TrainingBatch>();
+            this.OurResults = new List<TrainingBatch>();
+            this.OurTrainingTimes = new List<double>();
         }
     }
 }

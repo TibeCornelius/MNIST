@@ -132,7 +132,7 @@ namespace MNIST.NeuralNetworks
         }
         private StNeuron[] initialize_Neurons( int NeuronAmmount, ActivationFunctionOptions activationType )
         {
-            StNeuron[] NeuronArray = new StNeuron[NeuronAmmount];
+            StNeuron[] NeuronArray = new StNeuron[ NeuronAmmount ];
             Random random = new Random();
             for( int index = 0 ; index < NeuronAmmount ; index++ )
             {
