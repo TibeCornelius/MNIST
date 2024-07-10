@@ -1,8 +1,8 @@
 namespace MNIST
 {
-    public static class OutPuts
+    internal static class OutPuts
     {
-        public static readonly string StandardJsonOutput = "C:\\Users\\corne\\Desktop\\Everything\\C#\\Ai\\AiNumbers\\SavedSettings\\";
+        internal static readonly string StandardJsonOutput = "C:\\Users\\corne\\Desktop\\Everything\\C#\\Ai\\AiNumbers\\SavedSettings\\";
         
     }
 

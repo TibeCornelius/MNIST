@@ -66,10 +66,12 @@ namespace MNIST.NeuralNetworks
         public Network? network;
         public Network[]? NumberVerifyerNetworks;
         Data.Data myDataSet;
+        public Container TrainingData;
         public delegate void DisplayResults( ImageData image );
         public Manager()
         {
-            this.myDataSet = initializeDataSet();            
+            this.myDataSet = initializeDataSet();
+            this.TrainingData = new Container();       
         }
 
         private Data.Data initializeDataSet()
@@ -90,7 +92,28 @@ namespace MNIST.NeuralNetworks
             }
             return new Data.Data( bTrainingList, sTrainingList, bTestingList, sTestingList );
         }
-
+        public List<TrainingSet> GetLatestTrainingSet()
+        {
+            return TrainingData.GetLatestTrainingSet();
+        }
+        public bool ChangeNetworkDisplayImageResults( DisplayImageResults displayImageResults )
+        {
+            if( network == null )
+            {
+                return false;
+            }
+            network.displayResults = displayImageResults;
+            return true;
+        }
+        public bool ChangeNetworkDisplaySetResults( DisplayBatchResults displayBatchResults )
+        {
+            if( network == null )
+            {
+                return false;
+            }
+            network.displayBatchResults = displayBatchResults;
+            return true;
+        }
         public Image GetSingTrainingleImage( bool AddNoise )
         {
             return myDataSet.GetSingleTrainingImage( AddNoise );
@@ -99,11 +122,11 @@ namespace MNIST.NeuralNetworks
         {
             return myDataSet.GetSingleTestingImage( AddNoise );
         }
-        public TrainingBatch ImportSingleImage( Image image )
+        public TrainingSet ImportSingleImage( Image image )
         {
             if( network is null )
             {
-                return new TrainingBatch(-1);
+                return new TrainingSet(-1);
             }
             return network.ImportSingleImage( image );
         }
@@ -149,7 +172,7 @@ namespace MNIST.NeuralNetworks
             {
                 throw new NullReferenceException();
             }
-            TrainingBatch results = NumberVerifyerNetworks[ Image.Label ].ImportSingleImage( Image );
+            TrainingSet results = NumberVerifyerNetworks[ Image.Label ].ImportSingleImage( Image );
             if( results.ImageData[ 0 ].wasGuesCorrect )
             {
                 return true;
@@ -159,7 +182,7 @@ namespace MNIST.NeuralNetworks
                 return false;
             }
         }
-        public void SerializeWheightAndBiasesToJson( string output, bool DefaultLocation, bool SerializeVerifyer )
+        public void SerializeWheightAndBiasesToJson( string output, bool DefaultLocation, bool SerializeVerifyer, string FileName = "" )
         {
 
             if( SerializeVerifyer )
@@ -190,20 +213,27 @@ namespace MNIST.NeuralNetworks
                 {
                     return;            
                 }
-                network.CreateJson( output, DefaultLocation ); 
+                if( FileName != "" )
+                {
+                    network.CreateJson( output, DefaultLocation, FileName ); 
+                }
+                else
+                {
+                    network.CreateJson( output, DefaultLocation ); 
+                }
             }
         }
 
-        public List<TrainingBatch> TrainImageVerifyer( ImportSettings trainingImages, Mode mode, bool iwillDisplayResults, bool AddNoise )
+        public bool TrainImageVerifyer( ImportSettings trainingImages, Mode mode, bool iwillDisplayResults, bool AddNoise )
         {
             Stopwatch stopwatch = new();
             stopwatch.Start();
             if( NumberVerifyerNetworks == null )
             {
-                return new List<TrainingBatch>();
+                return false;
             }
  
-            List<TrainingBatch> trainingResults = new List<TrainingBatch>();
+            TrainingBatch trainingResults = new ();
             int AmmountImages = trainingImages.Ammount;
             int Itterations = trainingImages.Itterations;
             for( int Itteration = 0 ; Itteration < Itterations ; Itteration++ )
@@ -215,19 +245,19 @@ namespace MNIST.NeuralNetworks
                     if ( mode == Mode.Testing )
                     {
                         bool iamTrainingNetwork = false;
-                        trainingResults.Add( networkToTrain.RunImagesThroughNetwork( importSettings, iamTrainingNetwork, Itteration + 1 , iwillDisplayResults, false ) );
+                        trainingResults.TrainingSets.Add( networkToTrain.RunImagesThroughNetwork( importSettings, iamTrainingNetwork, Itteration + 1 , iwillDisplayResults, false ) );
                     }
                     else
                     {
                         bool iamTrainingNetwork = true;
-                        trainingResults.Add( networkToTrain.RunImagesThroughNetwork( importSettings, iamTrainingNetwork, Itteration + 1 , iwillDisplayResults, false ) );
+                        trainingResults.TrainingSets.Add( networkToTrain.RunImagesThroughNetwork( importSettings, iamTrainingNetwork, Itteration + 1 , iwillDisplayResults, false ) );
                     }
                     Console.WriteLine($"Network to verify number { NetworkIndex }");
                 }
             }
             stopwatch.Stop();
             Console.WriteLine($"Total elapsed time --> { stopwatch.Elapsed} ");
-            return trainingResults;
+            return true;
         }
         public void SerializeCurrentHistory( string OutputLocation, bool DefaultLocation )
         {
@@ -235,18 +265,17 @@ namespace MNIST.NeuralNetworks
             {
                 return;
             }
-            network.SerializeStatsToJson( OutputLocation, DefaultLocation );
         }
-        public List<TrainingBatch> ImportSetOfImages( ImportSettings trainingImages, Mode mode, bool iwillDisplayResults, bool AddNoise = false )
+        public bool ImportSetOfImages( ImportSettings trainingImages, Mode mode, bool iwillDisplayResults, bool AddNoise = false )
         {
             Stopwatch stopwatch = new();
             stopwatch.Start();
             if( network == null )
             {
-                return new List<TrainingBatch>();
+                return false;
             }
- 
-            List<TrainingBatch> trainingResults = new List<TrainingBatch>();
+
+            TrainingBatch trainingBatch = new();
             int AmmountImages = trainingImages.Ammount;
             int Itterations = trainingImages.Itterations;
             for( int Itteration = 0 ; Itteration < Itterations ; Itteration++ )
@@ -255,29 +284,30 @@ namespace MNIST.NeuralNetworks
                 if ( mode == Mode.Testing )
                 {
                     bool iamTrainingNetwork = false;
-                    trainingResults.Add( network.RunImagesThroughNetwork( importSettings, iamTrainingNetwork, Itteration + 1 , iwillDisplayResults, false ) );
+                    trainingBatch.TrainingSets.Add( network.RunImagesThroughNetwork( importSettings, iamTrainingNetwork, Itteration + 1 , iwillDisplayResults, false ) );
                 }
                 else
                 {
                     bool iamTrainingNetwork = true;
-                    trainingResults.Add( network.RunImagesThroughNetwork( importSettings, iamTrainingNetwork, Itteration + 1 , iwillDisplayResults, false ) );
+                    trainingBatch.TrainingSets.Add( network.RunImagesThroughNetwork( importSettings, iamTrainingNetwork, Itteration + 1 , iwillDisplayResults, false ) );
                 }
             }
             stopwatch.Stop();
-            Console.WriteLine($"Total elapsed time --> { stopwatch.Elapsed} ");
-            return trainingResults;
+            trainingBatch.TrainingTime = stopwatch.Elapsed.Milliseconds;
+            TrainingData.OurResults.Add( trainingBatch );
+            return true;
         }
 
-        public List<TrainingBatch> TrainSpecificImageVerifyer( ImportSettings trainingImages, Mode mode, bool iwillDisplayResults, bool AddNoise, int ImageVerifyerToTrain )
+        public void TrainSpecificImageVerifyer( ImportSettings trainingImages, Mode mode, bool iwillDisplayResults, bool AddNoise, int ImageVerifyerToTrain )
         {
             Stopwatch stopwatch = new();
             stopwatch.Start();
             if( NumberVerifyerNetworks == null )
             {
-                return new List<TrainingBatch>();
+                return;
             }
  
-            List<TrainingBatch> trainingResults = new List<TrainingBatch>();
+            TrainingBatch trainingResults = new();
             int AmmountImages = trainingImages.Ammount;
             int Itterations = trainingImages.Itterations;
             for( int Itteration = 0 ; Itteration < Itterations ; Itteration++ )
@@ -288,19 +318,17 @@ namespace MNIST.NeuralNetworks
                 if ( mode == Mode.Testing )
                 {
                     bool iamTrainingNetwork = false;
-                    trainingResults.Add( networkToTrain.RunImagesThroughNetwork( importSettings, iamTrainingNetwork, Itteration + 1 , iwillDisplayResults, false ) );
+                    trainingResults.TrainingSets.Add( networkToTrain.RunImagesThroughNetwork( importSettings, iamTrainingNetwork, Itteration + 1 , iwillDisplayResults, false ) );
                 }
                 else
                 {
                     bool iamTrainingNetwork = true;
-                    trainingResults.Add( networkToTrain.RunImagesThroughNetwork( importSettings, iamTrainingNetwork, Itteration + 1 , iwillDisplayResults, false ) );
+                    trainingResults.TrainingSets.Add( networkToTrain.RunImagesThroughNetwork( importSettings, iamTrainingNetwork, Itteration + 1 , iwillDisplayResults, false ) );
                 }
-                Console.WriteLine($"Network to verify number { ImageVerifyerToTrain }");
                 
             }
             stopwatch.Stop();
-            Console.WriteLine($"Total elapsed time --> { stopwatch.Elapsed} ");
-            return trainingResults;
+
         }
     }
 }

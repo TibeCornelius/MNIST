@@ -2,17 +2,14 @@ namespace MNIST.NeuralNetworks.TrainingResults
 {
     public class TrainingBatch
     {
-        public List<ImageData> ImageData;
-        public int CorrectGuesses;
-        public double TotalAverageCost;
-        public int TrainingSession;
-        public double TrainingDuration;
-        public TrainingBatch( int TrainingSession )
+        public List<TrainingSet> TrainingSets;
+        public double TrainingTime;
+        public DateTime dateTime;//Reference to when the training Batch was created
+        public TrainingBatch()
         {
-            this.TrainingSession = TrainingSession;
-            this.ImageData = new List<ImageData>();
-            this.CorrectGuesses = new int();
-            this.TotalAverageCost = new double();
+            this.TrainingSets = new List<TrainingSet>();
+            this.dateTime = DateTime.Now;
         }
+
     }
 }

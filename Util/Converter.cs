@@ -1,8 +1,8 @@
 namespace MNIST.Util
 {
-    public static class Converter
+    internal static class Converter
     {
-        public static T[][] Array2DToJagged<T>(T[,] array)
+        internal static T[][] Array2DToJagged<T>(T[,] array)
         {
             int rows = array.GetLength(0);
             int cols = array.GetLength(1);
@@ -17,7 +17,7 @@ namespace MNIST.Util
             }
             return jaggedArray;
         }
-        public static T[,] JaggedToArray2D<T>(T[][] jaggedArray)
+        internal static T[,] JaggedToArray2D<T>(T[][] jaggedArray)
         {
             int rows = jaggedArray.Length;
             int cols = jaggedArray[0].Length;
@@ -31,7 +31,7 @@ namespace MNIST.Util
             }
             return array2D;
         }
-        public static T[][][] List2DArrayToJaggedArray<T>(List<T[,]> list)
+        internal static T[][][] List2DArrayToJaggedArray<T>(List<T[,]> list)
         {
             return list.Select(array =>
             {
@@ -49,7 +49,7 @@ namespace MNIST.Util
                 return jaggedArray;
             }).ToArray();
         }
-        public static List<T[,]> Jagged3DArrayToList2DArray<T>(T[][][] jaggedArray)
+        internal static List<T[,]> Jagged3DArrayToList2DArray<T>(T[][][] jaggedArray)
         {
             return jaggedArray.Select(array =>
             {
@@ -66,11 +66,11 @@ namespace MNIST.Util
                 return multiArray;
             }).ToList();
         }
-        public static T[][] ListToJaggedArray<T>(List<T[]> list)
+        internal static T[][] ListToJaggedArray<T>(List<T[]> list)
         {
             return list.ToArray();
         }
-        public static List<T[]> JaggedArrayToList<T>(T[][] jaggedArray)
+        internal static List<T[]> JaggedArrayToList<T>(T[][] jaggedArray)
         {
             return jaggedArray.ToList();
         }

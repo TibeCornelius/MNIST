@@ -5,7 +5,6 @@ namespace MNIST.NeuralNetworks.TrainingResults
         public int ImageNumber = ImageNumber;
         public byte[,] Image = Image;
         public int NumberGuessed = Guess;
-        public double[] Results = [];
         public StNeuron[] neuronResults = OutputNeurons;
         public bool wasGuesCorrect => ImageNumber == NumberGuessed ;
         public double Cost = Cost; 

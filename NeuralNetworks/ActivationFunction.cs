@@ -2,6 +2,13 @@
 
 namespace MNIST.NeuralNetworks
 {
+    public enum ActivationFunctionOptions
+    {
+        Sigmoid,
+        ReLU,
+        LeakyRelu,
+    }
+
     public static class ActivationFunctions
     {
         public static double Sigmoid( double WeightedInput )
@@ -39,7 +46,7 @@ namespace MNIST.NeuralNetworks
             return ExponentiatedValues.Select( value => value / sumOfExponentiatedValues ).ToArray();
         }
 
-        public static double NextGaussian( this Random rand, double mean = 0, double stddev = 1)
+        public static double NextGaussian( this Random rand, double mean = 0, double stddev = 1 )
         {
             // Box-Muller transform
             double u1 = 1.0 - rand.NextDouble(); // Uniform(0,1] random doubles

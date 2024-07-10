@@ -2,13 +2,7 @@ using System.Text.Json;
 
 namespace MNIST.NeuralNetworks
 {
-    public enum ActivationFunctionOptions
-    {
-        Sigmoid,
-        ReLU,
-        LeakyRelu,
-    }
-
+   
     public sealed class Layer
     {
         public double[,] WeightsPreviousLayer;
@@ -162,7 +156,7 @@ namespace MNIST.NeuralNetworks
         private double[,] initialize_Weights( Network ParentNetwork, int LayerLevel, int NeuronAmmount, ActivationFunctionOptions activationType )
         {
             int inputSize = LayerLevel != 0 ? ParentNetwork.NetworkLayers[ LayerLevel - 1 ].NeuronAmmount : 28 * 28;
-            double stddev = Math.Sqrt(2.0 / inputSize);
+            double stddev = Math.Sqrt( 2.0 )/ inputSize ;
             double[,] weights = new double[ inputSize, NeuronAmmount ];
             Random RandomNumber = new Random();
 

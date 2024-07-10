@@ -5,26 +5,24 @@ using MNIST.Util;
 
 namespace MNIST.NeuralNetworks
 {
+    public delegate void DisplayImageResults( ImageData image );
+    public delegate void DisplayBatchResults( TrainingSet trainingBatch );
     public sealed class Network
     {
         public List<Layer> NetworkLayers;
         public List<int> LiNetwork;
-        public Container OurResultsContainer;
-        public delegate void DisplayImageResults( ImageData image );
         public DisplayImageResults? displayResults{ get; set; }
-        public delegate void DisplayBatchResults( TrainingBatch trainingBatch );
         public DisplayBatchResults? displayBatchResults{ get; set; }
         private ActivationFunctionOptions myActivationFunction;
         private bool iamImageRecognizer;
         private int myNumberToRecognize;
         private int myOutputNeurons;
         private Manager myManager;
-        private const double HyperParameterTuner = 0.5;//Used for momentum base gradient descent
+        private const double HyperParameterTuner = 0.9;//Used for momentum base gradient descent
         public Network( List<int> Network, ActivationFunctionOptions activationFunctionOptions, bool iamImageRecognizer, int myNumberToRecognize, Manager manager )
         {
             this.LiNetwork = Network; 
             this.NetworkLayers = new List<Layer>();
-            this.OurResultsContainer = new Container();
             this.iamImageRecognizer = iamImageRecognizer;
             this.myNumberToRecognize = myNumberToRecognize;
             this.myOutputNeurons = iamImageRecognizer ? 10 : 2;
@@ -41,8 +39,8 @@ namespace MNIST.NeuralNetworks
         {
             this.LiNetwork = new List<int>();
             this.NetworkLayers = new List<Layer>();
-            this.OurResultsContainer = new Container();
             this.myManager = manager;
+            this.myOutputNeurons = JsonSettings.iamImageRecognizer ? 10 : 2;
             initializeFromJson( JsonSettings );
             if( JsonSettings.iamImageRecognizer == false )
             {
@@ -57,22 +55,8 @@ namespace MNIST.NeuralNetworks
         }
 #endregion
 #region Json
-        public void SerializeStatsToJson( string OutputLocation, bool DefaultLocation )
-        {
-            if( DefaultLocation )
-            {
-                Directory.CreateDirectory(".\\SavedStats\\" + OutputLocation );
-                string JsonString = JsonSerializer.Serialize( OurResultsContainer );
-                File.WriteAllText( ".\\SavedStats\\" + OutputLocation + "\\Stats.json", JsonString );
-            }
-            else
-            {
-                Directory.CreateDirectory( OutputLocation );
-                string JsonString = JsonSerializer.Serialize( OurResultsContainer );
-                File.WriteAllText( OutputLocation + "\\Stats.json", JsonString );
-            }
-        }
-        public string CreateJson( string OuputLocation, bool DefaultLocation )
+
+        public string CreateJson( string OuputLocation, bool DefaultLocation, string FileName = "NetworkSettings" )
         {
             int imageToRecognize = iamImageRecognizer ? 0 : myNumberToRecognize;
             NetworkJsonFormat jsonClass = new( NetworkLayers.Count, LiNetwork.ToArray(), GetAllWheights(), GetAllBiases(), myActivationFunction, iamImageRecognizer,imageToRecognize );
@@ -85,7 +69,7 @@ namespace MNIST.NeuralNetworks
             else
             {
                 Directory.CreateDirectory( OuputLocation );
-                File.WriteAllText( OuputLocation + "\\NetworkSettings.json", NetworkJson );
+                File.WriteAllText( OuputLocation + "\\" + FileName + ".json", NetworkJson );
             }
             return NetworkJson; 
         }
@@ -121,7 +105,7 @@ namespace MNIST.NeuralNetworks
             foreach( int NeuronCount in LiNetwork )
             {
                 bool LastLayer = index == LiNetwork.Count - 1 ? true : false;
-                Layer layer = new( this, Converter.JaggedToArray2D( JsonSettings.Weights[ index ] ), JsonSettings.Biases[ index ], index, JsonSettings.NeuronCount[ index ], LastLayer, ActivationFunctionOptions.Sigmoid );
+                Layer layer = new( this, Converter.JaggedToArray2D( JsonSettings.Weights[ index ] ), JsonSettings.Biases[ index ], index, JsonSettings.NeuronCount[ index ], LastLayer, (ActivationFunctionOptions)JsonSettings.myActivationType );
                 NetworkLayers.Add( layer );
                 index++;
             }
@@ -132,7 +116,7 @@ namespace MNIST.NeuralNetworks
         {
             return new RefStNeuron( ref NetworkLayers[ Layer - 1 ].StNeurons );
         }
-        public double[] ByteInput( byte[,] image )
+        internal double[] ByteInput( byte[,] image )
         {
             double[] output = new double[ 28 * 28 ];
             for( int row = 0, total = 0 ; row < 28 ; row++ )
@@ -149,7 +133,7 @@ namespace MNIST.NeuralNetworks
             double returnvalue = WeightedInput / 255;
             return returnvalue;
         }
-        public TrainingBatch RunImagesThroughNetwork( ToImportImages ImportedImages, bool TrainNetwork , int Session, bool iwillDisplayResults, bool VerifyResults, bool CollectData )
+        internal TrainingSet RunImagesThroughNetwork( ToImportImages ImportedImages, bool TrainNetwork , int Session, bool iwillDisplayResults, bool VerifyResults )
         {
             if( iwillDisplayResults && ( displayResults is null || displayBatchResults is null ) )
             {
@@ -159,7 +143,7 @@ namespace MNIST.NeuralNetworks
             stopWatch.Start();
             List<ImportedImage> LiStImportedImages = new List<ImportedImage>();
             int CorrectGuesses = 0;
-            TrainingBatch myTraningResults = new TrainingBatch( Session );
+            TrainingSet myTraningResults = new( Session );
             List<byte[,]> allImages = ImportedImages.Images;
             List<int> allLabels = ImportedImages.Labels;
             for( int imageIndex = 0 ; imageIndex < allImages.Count ; imageIndex++ )
@@ -227,7 +211,6 @@ namespace MNIST.NeuralNetworks
             }
             myTraningResults.CorrectGuesses = CorrectGuesses;
             myTraningResults.TotalAverageCost = TotalAverageCost;
-            OurResultsContainer.OurResults.Add( myTraningResults );
             if( iwillDisplayResults )
             {
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
@@ -235,13 +218,13 @@ namespace MNIST.NeuralNetworks
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
             }
             stopWatch.Stop();
-            Console.WriteLine( stopWatch.Elapsed ); 
+            myTraningResults.TrainingTime = stopWatch.Elapsed.Milliseconds;
             return myTraningResults;
         }
 
-        internal TrainingBatch ImportSingleImage( Image image )
+        internal TrainingSet ImportSingleImage( Image image )
         {
-            TrainingBatch results = new TrainingBatch( 1 );
+            TrainingSet results = new ( 1 );
             ImportedImage StImportedImage = new ImportedImage
             {
                 image = image.ImageData,
@@ -328,7 +311,7 @@ namespace MNIST.NeuralNetworks
             }
             return iOutput;
         }
-        public double[] CalculateCorrectOutputs( int label )
+        internal double[] CalculateCorrectOutputs( int label )
         {
             double[] output = new double[ myOutputNeurons ];
             if( iamImageRecognizer )
@@ -355,7 +338,7 @@ namespace MNIST.NeuralNetworks
 
             return output;
         }
-        public double TotalCost( List< ImportedImage > LiStImportedImages )
+        internal double TotalCost( List< ImportedImage > LiStImportedImages )
         {
             double totalcost = new double();
             foreach( ImportedImage importedImage in LiStImportedImages )
@@ -364,12 +347,12 @@ namespace MNIST.NeuralNetworks
             }
             return totalcost / LiStImportedImages.Count;
         }
-        public double Nodecost( double outPutActivation, double ExpectedOutput )
+        internal double Nodecost( double outPutActivation, double ExpectedOutput )
         {
             double error = outPutActivation - ExpectedOutput;
             return error * error ;
         }  
-        public double NodeCostDerrivative( double outPutActivation, double ExpectedOutput )
+        internal double NodeCostDerrivative( double outPutActivation, double ExpectedOutput )
         {
             return 2 * ( outPutActivation - ExpectedOutput );
         }
