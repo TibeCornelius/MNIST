@@ -26,6 +26,7 @@ namespace MNIST.NeuralNetworks
             this.iamImageRecognizer = iamImageRecognizer;
             this.myNumberToRecognize = myNumberToRecognize;
             this.myOutputNeurons = iamImageRecognizer ? 10 : 2;
+            this.myActivationFunction = activationFunctionOptions;
             this.myManager = manager;
 
             int index = 0 ; 
@@ -41,6 +42,7 @@ namespace MNIST.NeuralNetworks
             this.NetworkLayers = new List<Layer>();
             this.myManager = manager;
             this.myOutputNeurons = JsonSettings.iamImageRecognizer ? 10 : 2;
+            this.myActivationFunction = (ActivationFunctionOptions)JsonSettings.myActivationType;
             initializeFromJson( JsonSettings );
             if( JsonSettings.iamImageRecognizer == false )
             {
