@@ -73,7 +73,11 @@ namespace MNIST.NeuralNetworks
             this.myDataSet = initializeDataSet();
             this.TrainingData = new Container();       
         }
-
+        public ToImportImages GetSetOfImages( Mode mode, bool AddNoise, int Ammount )
+        {
+            ToImportImages toImportImages = myDataSet.GetSetOfImages( Ammount, mode, AddNoise ); 
+            return toImportImages;
+        }
         private Data.Data initializeDataSet()
         {
             List<byte[,]> bTrainingList = new List<byte[,]>();
@@ -295,6 +299,7 @@ namespace MNIST.NeuralNetworks
             stopwatch.Stop();
             trainingBatch.TrainingTime = stopwatch.Elapsed.Milliseconds;
             TrainingData.OurResults.Add( trainingBatch );
+            Console.WriteLine($"Total time elapsed { stopwatch.Elapsed }");
             return true;
         }
 

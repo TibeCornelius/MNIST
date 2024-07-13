@@ -165,7 +165,7 @@ namespace MNIST.NeuralNetworks
                     layer.CalculateInputsEveryNeuron( StImportedImage );
                     layer.CalculateOutputs();
                 }
-                StImportedImage.cost = Cost( StImportedImage );
+                //StImportedImage.cost = Cost( StImportedImage );
                 int iGuessed = GetHighestOutput( StImportedImage );
                 if( iamImageRecognizer )
                 {  
@@ -213,14 +213,14 @@ namespace MNIST.NeuralNetworks
             }
             myTraningResults.CorrectGuesses = CorrectGuesses;
             myTraningResults.TotalAverageCost = TotalAverageCost;
+            stopWatch.Stop();
+            myTraningResults.TrainingTime = stopWatch.Elapsed.Milliseconds;
             if( iwillDisplayResults )
             {
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
                 displayBatchResults( myTraningResults );
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
             }
-            stopWatch.Stop();
-            myTraningResults.TrainingTime = stopWatch.Elapsed.Milliseconds;
             return myTraningResults;
         }
 
@@ -340,7 +340,7 @@ namespace MNIST.NeuralNetworks
 
             return output;
         }
-        internal double TotalCost( List< ImportedImage > LiStImportedImages )
+        private double TotalCost( List< ImportedImage > LiStImportedImages )
         {
             double totalcost = new double();
             foreach( ImportedImage importedImage in LiStImportedImages )

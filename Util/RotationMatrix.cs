@@ -3,16 +3,16 @@ namespace MNIST.Util
 {
     public class RotationMatrix
     {
-        private float myAngle;
-        public RotationMatrix( float angle )
+        private double myAngle;
+        public RotationMatrix( double angle )
         {
-            this.myAngle = (float)( angle * Math.PI / 180 );
+            this.myAngle =  angle * Math.PI / 180;
         }
 
-        public float[] GetXandY( float x, float y )
+        public double[] GetXandY( double x, double y )
         {
-            float newX = (float)(x * Math.Cos( (double)myAngle ) - y * Math.Sin( (double)myAngle));
-            float newY = (float)(x * Math.Sin( (double)myAngle ) + y * Math.Cos( (double)myAngle));
+            double newX = x * Math.Cos( myAngle ) - y * Math.Sin( myAngle);
+            double newY = x * Math.Sin( myAngle ) + y * Math.Cos( myAngle);
             return [ newX, newY ];
         }
         
